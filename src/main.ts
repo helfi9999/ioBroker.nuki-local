@@ -112,8 +112,15 @@ class NukiLocal extends utils.Adapter {
         | ReturnType<typeof setInterval>
         | null = null;
 
-    private readonly initializedDevices = new Set<string>();
-    private readonly webSmartlockIds = new Map<string, number>();
+    private readonly initializedDevices =
+        new Set<string>();
+
+    private readonly initializingDevices =
+        new Map<string, Promise<void>>();
+
+    private readonly webSmartlockIds =
+        new Map<string, number>();
+
     private readonly authorizationNames =
         new Map<number, Map<number, string>>();
 
@@ -147,6 +154,8 @@ class NukiLocal extends utils.Adapter {
     }
 
     private async onReady(): Promise<void> {
+        await this.ensureInstanceObjects();
+
         await this.setStateAsync(
             "info.connection",
             false,
@@ -194,6 +203,30 @@ class NukiLocal extends utils.Adapter {
             );
         }
     }
+
+    private async ensureInstanceObjects(): Promise<void> {
+        await this.extendObjectAsync(
+            "info.connection",
+            {
+                type: "state",
+                common: {
+                    name: "Connection",
+                    type: "boolean",
+                    role: "indicator.connected",
+                    read: true,
+                    write: false,
+                    def: false,
+                },
+                native: {},
+            },
+        );
+    }
+
+    /*
+     * ============================================================
+     * MQTT
+     * ============================================================
+     */
 
     private async startMqttBroker(): Promise<void> {
         const port =
@@ -647,17 +680,60 @@ class NukiLocal extends utils.Adapter {
         }
     }
 
+    /*
+     * ============================================================
+     * DEVICE INITIALIZATION
+     * ============================================================
+     */
+
     private async ensureDevice(
         deviceId: string,
     ): Promise<void> {
+        const normalized =
+            deviceId.toUpperCase();
+
         if (
             this.initializedDevices.has(
-                deviceId,
+                normalized,
             )
         ) {
             return;
         }
 
+        const existingPromise =
+            this.initializingDevices.get(
+                normalized,
+            );
+
+        if (existingPromise) {
+            await existingPromise;
+            return;
+        }
+
+        const initialization =
+            this.initializeDevice(
+                deviceId,
+                normalized,
+            );
+
+        this.initializingDevices.set(
+            normalized,
+            initialization,
+        );
+
+        try {
+            await initialization;
+        } finally {
+            this.initializingDevices.delete(
+                normalized,
+            );
+        }
+    }
+
+    private async initializeDevice(
+        deviceId: string,
+        normalized: string,
+    ): Promise<void> {
         await this.setObjectNotExistsAsync(
             deviceId,
             {
@@ -706,7 +782,7 @@ class NukiLocal extends utils.Adapter {
         );
 
         this.initializedDevices.add(
-            deviceId,
+            normalized,
         );
 
         this.log.info(
@@ -986,7 +1062,7 @@ class NukiLocal extends utils.Adapter {
     ): Promise<void> {
         const defaults: Array<{
             id: string;
-            value: string | number | boolean;
+            value: string | boolean;
         }> = [
             {
                 id: `${deviceId}.device.online`,
@@ -1042,7 +1118,10 @@ class NukiLocal extends utils.Adapter {
             },
         ];
 
-        for (const item of defaults) {
+        for (
+            const item
+            of defaults
+        ) {
             const state =
                 await this.getStateAsync(
                     item.id,
@@ -1102,6 +1181,58 @@ class NukiLocal extends utils.Adapter {
         }
     }
 
+    private async cleanupOldWebDeviceId(
+        oldDeviceId: string,
+        realDeviceId: string,
+    ): Promise<void> {
+        if (
+            oldDeviceId === realDeviceId
+        ) {
+            return;
+        }
+
+        const object =
+            await this.getObjectAsync(
+                oldDeviceId,
+            );
+
+        if (!object) {
+            return;
+        }
+
+        try {
+            await this.delObjectAsync(
+                oldDeviceId,
+                {
+                    recursive: true,
+                },
+            );
+
+            this.initializedDevices.delete(
+                oldDeviceId.toUpperCase(),
+            );
+
+            this.log.info(
+                `Removed old Web API device ID ${oldDeviceId}; using MQTT ID ${realDeviceId}`,
+            );
+        } catch (error) {
+            const message =
+                error instanceof Error
+                    ? error.message
+                    : String(error);
+
+            this.log.warn(
+                `Could not remove old Web API device ${oldDeviceId}: ${message}`,
+            );
+        }
+    }
+
+    /*
+     * ============================================================
+     * STATUS / EVENTS
+     * ============================================================
+     */
+
     private async handleLockState(
         deviceId: string,
         payload: string,
@@ -1109,7 +1240,11 @@ class NukiLocal extends utils.Adapter {
         const state =
             Number(payload);
 
-        if (!Number.isFinite(state)) {
+        if (
+            !Number.isFinite(
+                state,
+            )
+        ) {
             return;
         }
 
@@ -1143,7 +1278,11 @@ class NukiLocal extends utils.Adapter {
         const state =
             Number(payload);
 
-        if (!Number.isFinite(state)) {
+        if (
+            !Number.isFinite(
+                state,
+            )
+        ) {
             return;
         }
 
@@ -1203,26 +1342,36 @@ class NukiLocal extends utils.Adapter {
             Number(parts[4]);
 
         if (
-            Number.isFinite(action)
+            !Number.isFinite(action) ||
+            !Number.isFinite(trigger) ||
+            !Number.isFinite(authId) ||
+            !Number.isFinite(codeId) ||
+            !Number.isFinite(source)
         ) {
-            await this.setStateAsync(
-                `${deviceId}.activity.lastAction`,
-                action,
-                true,
+            this.log.warn(
+                `Invalid numeric values in lockActionEvent: ${payload}`,
             );
 
-            await this.setStringState(
-                `${deviceId}.activity.lastActionText`,
-                "Last action text",
-                this.getMappedText(
-                    LOCK_ACTIONS,
-                    action,
-                ),
-            );
+            return;
         }
 
         const now =
             new Date().toISOString();
+
+        await this.setStateAsync(
+            `${deviceId}.activity.lastAction`,
+            action,
+            true,
+        );
+
+        await this.setStringState(
+            `${deviceId}.activity.lastActionText`,
+            "Last action text",
+            this.getMappedText(
+                LOCK_ACTIONS,
+                action,
+            ),
+        );
 
         await this.setStringState(
             `${deviceId}.activity.lastDate`,
@@ -1230,80 +1379,83 @@ class NukiLocal extends utils.Adapter {
             now,
         );
 
-        if (
-            Number.isFinite(authId)
-        ) {
-            await this.setStateAsync(
-                `${deviceId}.advanced.authId`,
-                authId,
-                true,
-            );
-        }
+        await this.setStateAsync(
+            `${deviceId}.advanced.authId`,
+            authId,
+            true,
+        );
 
-        if (
-            Number.isFinite(codeId)
-        ) {
-            await this.setStateAsync(
-                `${deviceId}.advanced.codeId`,
-                codeId,
-                true,
-            );
-        }
+        await this.setStateAsync(
+            `${deviceId}.advanced.codeId`,
+            codeId,
+            true,
+        );
 
-        if (
-            Number.isFinite(source)
-        ) {
-            await this.setStateAsync(
-                `${deviceId}.advanced.source`,
-                source,
-                true,
-            );
-        }
+        await this.setStateAsync(
+            `${deviceId}.advanced.source`,
+            source,
+            true,
+        );
 
-        if (
-            Number.isFinite(trigger)
-        ) {
-            await this.setStateAsync(
-                `${deviceId}.advanced.trigger`,
-                trigger,
-                true,
-            );
-        }
+        await this.setStateAsync(
+            `${deviceId}.advanced.trigger`,
+            trigger,
+            true,
+        );
 
-        const userName =
+        /*
+         * Priorität:
+         * 1. Manuelle Zuordnung Code-ID -> Name
+         * 2. Web API anhand authId
+         * 3. Technischer Fallback
+         */
+        const configuredKeypadUser =
+            codeId > 0
+                ? this.findConfiguredKeypadUser(
+                      codeId,
+                  )
+                : undefined;
+
+        const resolvedUserName =
             this.findAuthorizationName(
                 deviceId,
                 authId,
             );
 
-        if (userName) {
-            await this.setStringState(
-                `${deviceId}.activity.lastUser`,
-                "Last user",
-                userName,
+        const displayUser =
+            configuredKeypadUser ??
+            resolvedUserName ??
+            (
+                codeId > 0
+                    ? `Unbekannt (Code-ID ${codeId})`
+                    : `Unbekannt (Auth-ID ${authId})`
             );
-        }
 
-        if (
-            Number.isFinite(codeId) &&
-            codeId > 0
-        ) {
+        await this.setStringState(
+            `${deviceId}.activity.lastUser`,
+            "Last user",
+            displayUser,
+        );
+
+        if (codeId > 0) {
             let type =
                 `Quelle ${source}`;
 
-            if (source === 0) {
-                type =
-                    "Back-Taste";
-            } else if (
-                source === 1
-            ) {
-                type =
-                    "Code";
-            } else if (
-                source === 2
-            ) {
-                type =
-                    "Fingerprint";
+            switch (source) {
+                case 0:
+                    type =
+                        "Back-Taste";
+                    break;
+
+                case 1:
+                    type =
+                        "Code";
+                    break;
+
+                case 2:
+                    type =
+                        "Fingerprint";
+                    break;
             }
 
             await this.setStringState(
@@ -1313,18 +1465,66 @@ class NukiLocal extends utils.Adapter {
             );
 
             await this.setStringState(
+                `${deviceId}.keypad.lastUser`,
+                "Last user",
+                displayUser,
+            );
+
+            await this.setStringState(
                 `${deviceId}.keypad.lastTimestamp`,
                 "Last access timestamp",
                 now,
             );
 
-            await this.setStringState(
-                `${deviceId}.keypad.lastUser`,
-                "Last user",
-                userName ??
-                    `Unbekannt (Auth-ID ${authId})`,
-            );
+            if (source === 2) {
+                this.log.info(
+                    `Fingerprint detected: authId=${authId}, codeId=${codeId}, user=${displayUser}`,
+                );
+            } else if (
+                source === 1
+            ) {
+                this.log.info(
+                    `Keypad code detected: authId=${authId}, codeId=${codeId}, user=${displayUser}`,
+                );
+            }
         }
+
+        this.log.debug(
+            `Lock action processed: action=${action}, trigger=${trigger}, authId=${authId}, codeId=${codeId}, source=${source}`,
+        );
+    }
+
+    private findConfiguredKeypadUser(
+        codeId: number,
+    ): string | undefined {
+        const users =
+            Array.isArray(
+                this.config.keypadUsers,
+            )
+                ? this.config.keypadUsers
+                : [];
+
+        const match =
+            users.find(
+                user =>
+                    Number(
+                        user.codeId,
+                    ) ===
+                    codeId,
+            );
+
+        if (
+            !match ||
+            typeof match.name !==
+                "string"
+        ) {
+            return undefined;
+        }
+
+        const name =
+            match.name.trim();
+
+        return name || undefined;
     }
 
     private findAuthorizationName(
@@ -1352,6 +1552,12 @@ class NukiLocal extends utils.Adapter {
                 authId,
             );
     }
+
+    /*
+     * ============================================================
+     * COMMANDS
+     * ============================================================
+     */
 
     private async createCommandState(
         id: string,
@@ -1535,7 +1741,10 @@ class NukiLocal extends utils.Adapter {
                     },
                     error => {
                         if (error) {
-                            reject(error);
+                            reject(
+                                error,
+                            );
+
                             return;
                         }
 
@@ -1557,7 +1766,11 @@ class NukiLocal extends utils.Adapter {
         const result =
             Number(payload);
 
-        if (!Number.isFinite(result)) {
+        if (
+            !Number.isFinite(
+                result,
+            )
+        ) {
             return;
         }
 
@@ -1575,6 +1788,12 @@ class NukiLocal extends utils.Adapter {
                 : `Fehler ${result}`,
         );
     }
+
+    /*
+     * ============================================================
+     * WEB API
+     * ============================================================
+     */
 
     private async startWebApi(): Promise<void> {
         const token =
@@ -1703,10 +1922,23 @@ class NukiLocal extends utils.Adapter {
                 continue;
             }
 
-            const deviceId =
+            const conversion =
                 this.getMqttDeviceIdFromWebDevice(
                     device,
                 );
+
+            const deviceId =
+                conversion.deviceId;
+
+            if (
+                conversion.originalHex !==
+                conversion.deviceId
+            ) {
+                await this.cleanupOldWebDeviceId(
+                    conversion.originalHex,
+                    conversion.deviceId,
+                );
+            }
 
             this.webSmartlockIds.set(
                 this.normalizeDeviceId(
@@ -1826,34 +2058,59 @@ class NukiLocal extends utils.Adapter {
 
     private getMqttDeviceIdFromWebDevice(
         device: NukiWebDevice,
-    ): string {
+    ): {
+        deviceId: string;
+        originalHex: string;
+    } {
         try {
-            return BigInt(
-                device.smartlockId,
-            )
-                .toString(16)
-                .toUpperCase()
-                .padStart(
-                    8,
-                    "0",
-                );
+            const originalHex =
+                BigInt(
+                    device.smartlockId,
+                )
+                    .toString(16)
+                    .toUpperCase();
+
+            const deviceId =
+                originalHex
+                    .slice(-8)
+                    .padStart(
+                        8,
+                        "0",
+                    );
+
+            return {
+                deviceId,
+                originalHex,
+            };
         } catch {
-            return String(
-                device.smartlockId,
-            );
+            const value =
+                String(
+                    device.smartlockId,
+                );
+
+            return {
+                deviceId:
+                    value,
+                originalHex:
+                    value,
+            };
         }
     }
 
     private normalizeDeviceId(
         deviceId: string,
     ): string {
-        return deviceId
-            .trim()
-            .toUpperCase()
-            .replace(
-                /^0X/,
-                "",
-            )
+        const normalized =
+            deviceId
+                .trim()
+                .toUpperCase()
+                .replace(
+                    /^0X/,
+                    "",
+                );
+
+        return normalized
+            .slice(-8)
             .padStart(
                 8,
                 "0",
@@ -1909,7 +2166,8 @@ class NukiLocal extends utils.Adapter {
 
             await this.setStateAsync(
                 `${deviceId}.device.online`,
-                device.serverState === 0,
+                device.serverState ===
+                    0,
                 true,
             );
         }
@@ -1997,7 +2255,8 @@ class NukiLocal extends utils.Adapter {
 
             await this.setStateAsync(
                 `${deviceId}.status.locked`,
-                state.state === 1,
+                state.state ===
+                    1,
                 true,
             );
         }
@@ -2023,7 +2282,8 @@ class NukiLocal extends utils.Adapter {
 
             await this.setStateAsync(
                 `${deviceId}.status.doorOpen`,
-                state.doorState === 3,
+                state.doorState ===
+                    3,
                 true,
             );
         }
@@ -2036,7 +2296,10 @@ class NukiLocal extends utils.Adapter {
             NukiWebAuthorization[],
     ): Promise<void> {
         const authNames =
-            new Map<number, string>();
+            new Map<
+                number,
+                string
+            >();
 
         for (
             const auth
@@ -2104,15 +2367,36 @@ class NukiLocal extends utils.Adapter {
                 (
                     a,
                     b,
-                ) =>
-                    Date.parse(
-                        b.date ??
-                            "",
-                    ) -
-                    Date.parse(
-                        a.date ??
-                            "",
-                    ),
+                ) => {
+                    const bTime =
+                        Date.parse(
+                            b.date ??
+                                "",
+                        );
+
+                    const aTime =
+                        Date.parse(
+                            a.date ??
+                                "",
+                        );
+
+                    return (
+                        (
+                            Number.isFinite(
+                                bTime,
+                            )
+                                ? bTime
+                                : 0
+                        ) -
+                        (
+                            Number.isFinite(
+                                aTime,
+                            )
+                                ? aTime
+                                : 0
+                        )
+                    );
+                },
             );
 
         const last =
@@ -2175,6 +2459,12 @@ class NukiLocal extends utils.Adapter {
             );
         }
     }
+
+    /*
+     * ============================================================
+     * HELPERS
+     * ============================================================
+     */
 
     private getMappedText(
         map:
@@ -2378,6 +2668,12 @@ class NukiLocal extends utils.Adapter {
             "_",
         );
     }
+
+    /*
+     * ============================================================
+     * UNLOAD
+     * ============================================================
+     */
 
     private onUnload(
         callback: () => void,

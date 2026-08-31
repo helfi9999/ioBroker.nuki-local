@@ -8,6 +8,11 @@ declare global {
             webApiEnabled: boolean;
             webApiToken: string;
             webApiInterval: number;
+
+            keypadUsers: Array<{
+                codeId: number;
+                name: string;
+            }>;
         }
     }
 }
