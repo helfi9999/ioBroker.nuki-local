@@ -1,6 +1,6 @@
 {
   "name": "iobroker.nuki-local",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Local MQTT integration for Nuki Smart Locks",
   "author": {
     "name": "helfi9999",
