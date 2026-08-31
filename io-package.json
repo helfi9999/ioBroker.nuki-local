@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "nuki-local",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "news": {
       "0.1.0": {
         "en": "Initial public release of the Nuki Local adapter",
@@ -28,6 +28,19 @@
         "pl": "Ulepszenia repozytorium i publikacji",
         "uk": "Покращення репозиторію та публікації",
         "zh-cn": "改进存储库和发布流程"
+      },
+      "0.1.2": {
+        "en": "Publishing workflow and package metadata improvements",
+        "de": "Verbesserungen am Veröffentlichungs-Workflow und an den Paket-Metadaten",
+        "ru": "Улучшения процесса публикации и метаданных пакета",
+        "pt": "Melhorias no fluxo de publicação e nos metadados do pacote",
+        "nl": "Verbeteringen aan publicatieworkflow en pakketmetadata",
+        "fr": "Améliorations du processus de publication et des métadonnées du paquet",
+        "it": "Miglioramenti al flusso di pubblicazione e ai metadati del pacchetto",
+        "es": "Mejoras en el flujo de publicación y los metadatos del paquete",
+        "pl": "Ulepszenia procesu publikacji i metadanych pakietu",
+        "uk": "Покращення процесу публікації та метаданих пакета",
+        "zh-cn": "改进发布流程和软件包元数据"
       }
     },
     "titleLang": {
