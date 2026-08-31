@@ -1409,7 +1409,7 @@ class NukiLocal extends utils.Adapter {
         `Initial Nuki Web API update failed: ${message}`
       );
     }
-    this.webApiTimer = setInterval(
+    this.webApiTimer = this.setInterval(
       () => {
         void this.updateNukiWebData().catch(
           (error) => {

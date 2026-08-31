@@ -8,30 +8,65 @@
             "help": "Port used by the integrated MQTT broker",
             "min": 1,
             "max": 65535,
-            "default": 1883
+            "default": 1883,
+            "size": {
+                "xs": 12,
+                "sm": 12,
+                "md": 6,
+                "lg": 6,
+                "xl": 6
+            }
         },
         "mqttUsername": {
             "type": "text",
             "label": "MQTT username",
             "help": "Username used by the Nuki Smart Lock",
-            "default": "nuki"
+            "default": "nuki",
+            "size": {
+                "xs": 12,
+                "sm": 12,
+                "md": 6,
+                "lg": 6,
+                "xl": 6
+            }
         },
         "mqttPassword": {
             "type": "password",
             "label": "MQTT password",
-            "help": "Password used by the Nuki Smart Lock"
+            "help": "Password used by the Nuki Smart Lock",
+            "size": {
+                "xs": 12,
+                "sm": 12,
+                "md": 6,
+                "lg": 6,
+                "xl": 6
+            }
         },
         "webApiEnabled": {
             "type": "checkbox",
             "label": "Enable Nuki Web API",
             "help": "Enable additional cloud data such as users, authorizations and activity logs",
-            "default": false
+            "default": false,
+            "size": {
+                "xs": 12,
+                "sm": 12,
+                "md": 6,
+                "lg": 6,
+                "xl": 6
+            }
         },
         "webApiToken": {
             "type": "password",
             "label": "Nuki Web API token",
             "help": "Personal API token used to access the Nuki Web API",
-            "hidden": "!data.webApiEnabled"
+            "hidden": "!data.webApiEnabled",
+            "size": {
+                "xs": 12,
+                "sm": 12,
+                "md": 6,
+                "lg": 6,
+                "xl": 6
+            }
         },
         "webApiInterval": {
             "type": "number",
@@ -40,7 +75,14 @@
             "min": 60,
             "max": 86400,
             "default": 300,
-            "hidden": "!data.webApiEnabled"
+            "hidden": "!data.webApiEnabled",
+            "size": {
+                "xs": 12,
+                "sm": 12,
+                "md": 6,
+                "lg": 6,
+                "xl": 6
+            }
         },
         "keypadUsers": {
             "type": "table",

@@ -127,9 +127,7 @@ class NukiLocal extends utils.Adapter {
         | ReturnType<typeof aedesPersistenceLevel>
         | null = null;
 
-    private webApiTimer:
-        | ReturnType<typeof setInterval>
-        | null = null;
+    private webApiTimer: ioBroker.Interval | undefined | null = null;
 
     private readonly initializedDevices =
         new Set<string>();
@@ -2003,7 +2001,7 @@ class NukiLocal extends utils.Adapter {
         }
 
         this.webApiTimer =
-            setInterval(
+            this.setInterval(
                 () => {
                     void this.updateNukiWebData()
                         .catch(

@@ -1,5 +1,19 @@
 {
     "nuki-local adapter settings": "Adaptereinstellungen für nuki-local",
-    "option1": "Option1",
-    "option2": "Option2"
+    "MQTT port": "MQTT-Port",
+    "Port used by the integrated MQTT broker": "Port des integrierten MQTT-Brokers",
+    "MQTT username": "MQTT-Benutzername",
+    "Username used by the Nuki Smart Lock": "Benutzername für das Nuki Smart Lock",
+    "MQTT password": "MQTT-Passwort",
+    "Password used by the Nuki Smart Lock": "Passwort für das Nuki Smart Lock",
+    "Enable Nuki Web API": "Nuki Web API aktivieren",
+    "Enable additional cloud data such as users, authorizations and activity logs": "Zusätzliche Cloud-Daten wie Benutzer, Berechtigungen und Aktivitätsprotokolle aktivieren",
+    "Nuki Web API token": "Nuki Web API Token",
+    "Personal API token used to access the Nuki Web API": "Persönlicher API-Token für den Zugriff auf die Nuki Web API",
+    "Web API update interval": "Web API Aktualisierungsintervall",
+    "Interval in seconds for updating Nuki Web API data": "Intervall in Sekunden für die Aktualisierung der Nuki Web API Daten",
+    "Keypad / Fingerprint users": "Keypad- / Fingerprint-Benutzer",
+    "Assign Nuki Code IDs to user names. The Code ID can be found in the lockActionEvent MQTT message.": "Nuki Code-IDs Benutzernamen zuordnen. Die Code-ID steht in der MQTT-Nachricht lockActionEvent.",
+    "Code ID": "Code-ID",
+    "Name": "Name"
 }

@@ -20,4 +20,3 @@ coverage
 admin/i18n/flat.txt
 admin/i18n/*/flat.txt
 # TypeScript build output
-build/

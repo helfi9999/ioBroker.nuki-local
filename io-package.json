@@ -15,6 +15,19 @@
         "pl": "Pierwsze wydanie",
         "uk": "Початкова версія",
         "zh-cn": "首次出版"
+      },
+      "0.1.0": {
+        "en": "Initial public release of the Nuki Local adapter",
+        "de": "Erste öffentliche Version des Nuki Local Adapters",
+        "ru": "Первый публичный выпуск адаптера Nuki Local",
+        "pt": "Primeira versão pública do adaptador Nuki Local",
+        "nl": "Eerste openbare versie van de Nuki Local-adapter",
+        "fr": "Première version publique de l'adaptateur Nuki Local",
+        "it": "Prima versione pubblica dell'adattatore Nuki Local",
+        "es": "Primera versión pública del adaptador Nuki Local",
+        "pl": "Pierwsza publiczna wersja adaptera Nuki Local",
+        "uk": "Перший публічний випуск адаптера Nuki Local",
+        "zh-cn": "Nuki Local 适配器的首个公开版本"
       }
     },
     "titleLang": {
@@ -51,9 +64,7 @@
       "smart-lock",
       "mqtt",
       "local",
-      "door-lock",
-      "smarthome",
-      "iobroker"
+      "door-lock"
     ],
     "licenseInformation": {
       "type": "free",
@@ -83,6 +94,14 @@
       {
         "admin": ">=7.6.20"
       }
+    ],
+    "protectedNative": [
+      "mqttPassword",
+      "webApiToken"
+    ],
+    "encryptedNative": [
+      "mqttPassword",
+      "webApiToken"
     ]
   },
   "native": {},

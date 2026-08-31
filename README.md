@@ -32,10 +32,7 @@ Optionally, the Nuki Web API can be enabled to enrich the local MQTT data with a
 
 ## Installation
 
-```bash
-cd /opt/iobroker
-iobroker url /opt/iobroker/ioBroker.nuki-local
-```
+Install the adapter from the ioBroker Admin interface once it is available in the ioBroker repository.
 
 ## MQTT configuration
 
@@ -390,13 +387,6 @@ cd /opt/iobroker/ioBroker.nuki-local
 npm run build
 ```
 
-Install from the local directory:
-
-```bash
-cd /opt/iobroker
-iobroker url /opt/iobroker/ioBroker.nuki-local
-```
-
 Upload adapter files:
 
 ```bash
@@ -440,4 +430,6 @@ Initial functional development version.
 
 ## License
 
-MIT
+MIT License
+
+Copyright (c) 2026 helfi9999
