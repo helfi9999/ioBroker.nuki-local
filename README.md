@@ -401,6 +401,12 @@ Current development version:
 
 ## Changelog
 
+### 0.1.2
+
+- Improved publishing workflow
+- Added npm trusted publishing support
+- Updated package metadata and repository checks
+
 ### 0.1.0
 
 Initial functional development version.
