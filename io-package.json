@@ -96,7 +96,10 @@
       }
     ]
   },
-  "native": {},
+  "native": {
+    "mqttPassword": "",
+    "webApiToken": ""
+  },
   "objects": [],
   "instanceObjects": [
     {
