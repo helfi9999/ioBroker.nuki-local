@@ -56,6 +56,25 @@ const LOCK_ACTIONS: Record<number, string> = {
     90: "Button ohne Aktion",
 };
 
+const NUKI_ICONS = {
+    locked: "/adapter/nuki-local/icons/Nuki_Vis/nuki_locked.png",
+    unlocked: "/adapter/nuki-local/icons/Nuki_Vis/nuki_unlocked.png",
+    doorOpen: "/adapter/nuki-local/icons/Nuki_Vis/nuki_door_open.png",
+    doorClosed: "/adapter/nuki-local/icons/Nuki_Vis/nuki_door_closed.png",
+    charging: "/adapter/nuki-local/icons/Nuki_Vis/nuki_charging.png",
+    pairing: "/adapter/nuki-local/icons/Nuki_Vis/nuki_pairing.png",
+    unknown: "/adapter/nuki-local/icons/Nuki_Vis/nuki_unknown.png",
+} as const;
+
+type NukiIconState =
+    | "locked"
+    | "unlocked"
+    | "door_open"
+    | "door_closed"
+    | "charging"
+    | "pairing"
+    | "unknown";
+
 interface NukiWebState {
     mode?: number;
     state?: number;
@@ -221,6 +240,12 @@ class NukiLocal extends utils.Adapter {
             },
         );
     }
+
+    /*
+     * ============================================================
+     * MQTT
+     * ============================================================
+     */
 
     private async startMqttBroker(): Promise<void> {
         const port =
@@ -590,6 +615,10 @@ class NukiLocal extends utils.Adapter {
                         "Battery charging",
                         payload,
                     );
+
+                    await this.updateDeviceIcon(
+                        deviceId,
+                    );
                     break;
 
                 case "batteryCritical":
@@ -673,6 +702,12 @@ class NukiLocal extends utils.Adapter {
             );
         }
     }
+
+    /*
+     * ============================================================
+     * DEVICE INITIALIZATION
+     * ============================================================
+     */
 
     private async ensureDevice(
         deviceId: string,
@@ -773,6 +808,10 @@ class NukiLocal extends utils.Adapter {
             normalized,
         );
 
+        await this.updateDeviceIcon(
+            deviceId,
+        );
+
         this.log.info(
             `Nuki device initialized: ${deviceId}`,
         );
@@ -824,6 +863,20 @@ class NukiLocal extends utils.Adapter {
         await this.ensureStateObject(
             `${deviceId}.status.timestamp`,
             "Timestamp",
+            "string",
+            "text",
+        );
+
+        await this.ensureStateObject(
+            `${deviceId}.status.iconState`,
+            "Icon state",
+            "string",
+            "text",
+        );
+
+        await this.ensureStateObject(
+            `${deviceId}.status.icon`,
+            "Icon",
             "string",
             "text",
         );
@@ -1104,9 +1157,20 @@ class NukiLocal extends utils.Adapter {
                 id: `${deviceId}.commands.lastResultText`,
                 value: "",
             },
+            {
+                id: `${deviceId}.status.iconState`,
+                value: "unknown",
+            },
+            {
+                id: `${deviceId}.status.icon`,
+                value: NUKI_ICONS.unknown,
+            },
         ];
 
-        for (const item of defaults) {
+        for (
+            const item
+            of defaults
+        ) {
             const state =
                 await this.getStateAsync(
                     item.id,
@@ -1133,7 +1197,10 @@ class NukiLocal extends utils.Adapter {
             `${deviceId}.web`,
         ];
 
-        for (const id of legacy) {
+        for (
+            const id
+            of legacy
+        ) {
             const object =
                 await this.getObjectAsync(
                     id,
@@ -1209,6 +1276,128 @@ class NukiLocal extends utils.Adapter {
         }
     }
 
+    /*
+     * ============================================================
+     * ICON
+     * ============================================================
+     */
+
+    private async updateDeviceIcon(
+        deviceId: string,
+    ): Promise<void> {
+        const chargingState =
+            await this.getStateAsync(
+                `${deviceId}.battery.charging`,
+            );
+
+        const doorOpenState =
+            await this.getStateAsync(
+                `${deviceId}.status.doorOpen`,
+            );
+
+        const lockState =
+            await this.getStateAsync(
+                `${deviceId}.status.lockState`,
+            );
+
+        const charging =
+            chargingState?.val === true;
+
+        const hasDoorState =
+            doorOpenState !== null &&
+            doorOpenState !== undefined &&
+            doorOpenState.val !== null &&
+            doorOpenState.val !== undefined;
+
+        const doorOpen =
+            doorOpenState?.val === true;
+
+        const lockStateValue =
+            typeof lockState?.val ===
+                "number"
+                ? lockState.val
+                : Number(
+                      lockState?.val,
+                  );
+
+        let iconState: 
+	    NukiIconState =
+                "unknown";
+
+        let icon: string =
+            NUKI_ICONS.unknown;
+
+        /*
+         * Priorität:
+         *
+         * 1. Akku lädt
+         * 2. Tür offen
+         * 3. Schloss zugesperrt
+         * 4. Schloss aufgesperrt
+         * 5. Tür geschlossen
+         * 6. unbekannt
+         */
+
+        if (charging) {
+            iconState =
+                "charging";
+
+            icon =
+                NUKI_ICONS.charging;
+        } else if (doorOpen) {
+            iconState =
+                "door_open";
+
+            icon =
+                NUKI_ICONS.doorOpen;
+        } else if (
+            lockStateValue === 1
+        ) {
+            iconState =
+                "locked";
+
+            icon =
+                NUKI_ICONS.locked;
+        } else if (
+            lockStateValue === 3 ||
+            lockStateValue === 5 ||
+            lockStateValue === 6
+        ) {
+            iconState =
+                "unlocked";
+
+            icon =
+                NUKI_ICONS.unlocked;
+        } else if (
+            hasDoorState &&
+            !doorOpen
+        ) {
+            iconState =
+                "door_closed";
+
+            icon =
+                NUKI_ICONS.doorClosed;
+        }
+
+        await this.setStateAsync(
+            `${deviceId}.status.iconState`,
+            iconState,
+            true,
+        );
+
+        await this.setStateAsync(
+            `${deviceId}.status.icon`,
+            icon,
+            true,
+        );
+    }
+
+    /*
+     * ============================================================
+     * STATUS / EVENTS
+     * ============================================================
+     */
+
     private async handleLockState(
         deviceId: string,
         payload: string,
@@ -1244,6 +1433,10 @@ class NukiLocal extends utils.Adapter {
             `${deviceId}.status.locked`,
             state === 1,
             true,
+        );
+
+        await this.updateDeviceIcon(
+            deviceId,
         );
     }
 
@@ -1282,6 +1475,10 @@ class NukiLocal extends utils.Adapter {
             `${deviceId}.status.doorOpen`,
             state === 3,
             true,
+        );
+
+        await this.updateDeviceIcon(
+            deviceId,
         );
     }
 
@@ -1523,6 +1720,12 @@ class NukiLocal extends utils.Adapter {
             );
     }
 
+    /*
+     * ============================================================
+     * COMMANDS
+     * ============================================================
+     */
+
     private async createCommandState(
         id: string,
         name: string,
@@ -1556,22 +1759,6 @@ class NukiLocal extends utils.Adapter {
             );
         }
     }
-
-    /*
-     * ============================================================
-     * COMMANDS
-     *
-     * WICHTIG:
-     *
-     * lock    = lockAction 2
-     * unlock  = lockAction 1
-     * unlatch = lockAction 3
-     *
-     * Damit wird bei "unlock" explizit nur
-     * entriegelt und nicht das einfache
-     * MQTT-Topic "unlock=true" verwendet.
-     * ============================================================
-     */
 
     private async onStateChange(
         id: string,
@@ -1769,6 +1956,12 @@ class NukiLocal extends utils.Adapter {
         );
     }
 
+    /*
+     * ============================================================
+     * WEB API
+     * ============================================================
+     */
+
     private async startWebApi(): Promise<void> {
         const token =
             String(
@@ -1879,7 +2072,10 @@ class NukiLocal extends utils.Adapter {
             );
         }
 
-        for (const device of devices) {
+        for (
+            const device
+            of devices
+        ) {
             const smartlockId =
                 Number(
                     device.smartlockId,
@@ -2147,6 +2343,10 @@ class NukiLocal extends utils.Adapter {
             device.state;
 
         if (!state) {
+            await this.updateDeviceIcon(
+                deviceId,
+            );
+
             return;
         }
 
@@ -2226,8 +2426,7 @@ class NukiLocal extends utils.Adapter {
 
             await this.setStateAsync(
                 `${deviceId}.status.locked`,
-                state.state ===
-                    1,
+                state.state === 1,
                 true,
             );
         }
@@ -2253,11 +2452,14 @@ class NukiLocal extends utils.Adapter {
 
             await this.setStateAsync(
                 `${deviceId}.status.doorOpen`,
-                state.doorState ===
-                    3,
+                state.doorState === 3,
                 true,
             );
         }
+
+        await this.updateDeviceIcon(
+            deviceId,
+        );
     }
 
     private async storeWebAuthorizations(
@@ -2267,12 +2469,12 @@ class NukiLocal extends utils.Adapter {
             NukiWebAuthorization[],
     ): Promise<void> {
         const authNames =
-            new Map<
-                number,
-                string
-            >();
+            new Map<number, string>();
 
-        for (const auth of authorizations) {
+        for (
+            const auth
+            of authorizations
+        ) {
             if (
                 typeof auth.authId ===
                     "number" &&
@@ -2427,6 +2629,12 @@ class NukiLocal extends utils.Adapter {
             );
         }
     }
+
+    /*
+     * ============================================================
+     * HELPERS
+     * ============================================================
+     */
 
     private getMappedText(
         map:
@@ -2631,6 +2839,12 @@ class NukiLocal extends utils.Adapter {
         );
     }
 
+    /*
+     * ============================================================
+     * UNLOAD
+     * ============================================================
+     */
+
     private onUnload(
         callback: () => void,
     ): void {
@@ -2716,3 +2930,4 @@ if (require.main !== module) {
     (() =>
         new NukiLocal())();
 }
+
