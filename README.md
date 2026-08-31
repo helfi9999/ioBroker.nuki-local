@@ -376,7 +376,6 @@ Keypad PIN codes are intentionally not stored by the adapter.
 Show adapter logs:
 
 ```bash
-cd /opt/iobroker
 iobroker logs nuki-local.0 --watch
 ```
 
