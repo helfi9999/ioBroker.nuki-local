@@ -1,21 +1,8 @@
 {
   "common": {
     "name": "nuki-local",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "news": {
-      "0.0.1": {
-        "en": "initial release",
-        "de": "Erstveröffentlichung",
-        "ru": "Начальная версия",
-        "pt": "lançamento inicial",
-        "nl": "Eerste uitgave",
-        "fr": "Première version",
-        "it": "Versione iniziale",
-        "es": "Versión inicial",
-        "pl": "Pierwsze wydanie",
-        "uk": "Початкова версія",
-        "zh-cn": "首次出版"
-      },
       "0.1.0": {
         "en": "Initial public release of the Nuki Local adapter",
         "de": "Erste öffentliche Version des Nuki Local Adapters",
@@ -28,6 +15,19 @@
         "pl": "Pierwsza publiczna wersja adaptera Nuki Local",
         "uk": "Перший публічний випуск адаптера Nuki Local",
         "zh-cn": "Nuki Local 适配器的首个公开版本"
+      },
+      "0.1.1": {
+        "en": "Repository and publishing improvements",
+        "de": "Verbesserungen für Repository und Veröffentlichung",
+        "ru": "Улучшения репозитория и публикации",
+        "pt": "Melhorias no repositório e na publicação",
+        "nl": "Verbeteringen voor repository en publicatie",
+        "fr": "Améliorations du dépôt et de la publication",
+        "it": "Miglioramenti del repository e della pubblicazione",
+        "es": "Mejoras del repositorio y la publicación",
+        "pl": "Ulepszenia repozytorium i publikacji",
+        "uk": "Покращення репозиторію та публікації",
+        "zh-cn": "改进存储库和发布流程"
       }
     },
     "titleLang": {
