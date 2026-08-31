@@ -1,136 +1,443 @@
-![Logo](admin/nuki-local.png)
 # ioBroker.nuki-local
 
-[![NPM version](https://img.shields.io/npm/v/iobroker.nuki-local.svg)](https://www.npmjs.com/package/iobroker.nuki-local)
-[![Downloads](https://img.shields.io/npm/dm/iobroker.nuki-local.svg)](https://www.npmjs.com/package/iobroker.nuki-local)
-![Number of Installations](https://iobroker.live/badges/nuki-local-installed.svg)
-![Current version in stable repository](https://iobroker.live/badges/nuki-local-stable.svg)
+Local Nuki Smart Lock integration for ioBroker using an integrated MQTT broker.
 
-[![NPM](https://nodei.co/npm/iobroker.nuki-local.png?downloads=true)](https://nodei.co/npm/iobroker.nuki-local/)
+The adapter is designed for direct local communication with compatible Nuki Smart Locks over MQTT.
+Optionally, the Nuki Web API can be enabled to enrich the local MQTT data with authorization names and activity information.
 
-**Tests:** ![Test and Release](https://github.com/helfi9999/ioBroker.nuki-local/workflows/Test%20and%20Release/badge.svg)
+## Features
 
-## nuki-local adapter for ioBroker
+- Integrated MQTT broker
+- Local communication with Nuki Smart Locks
+- No separate MQTT broker required
+- MQTT authentication with username and password
+- Persistent retained MQTT data using LevelDB
+- Automatic restore of retained Nuki states after adapter restart
+- Automatic device creation
+- Lock status
+- Door sensor status
+- Battery information
+- Firmware information
+- Device type
+- Online status
+- Lock / unlock / unlatch commands
+- Lock'n'Go commands
+- Fingerprint detection
+- Keypad code detection
+- Configurable Code-ID to user-name mapping
+- Optional Nuki Web API integration
+- Activity information
+- Dynamic status icons
+- Local operation remains available even when the Nuki Web API is disabled
 
-Local MQTT integration for Nuki Smart Locks
+## Installation
 
-## Developer manual
-This section is intended for the developer. It can be deleted later.
-
-### DISCLAIMER
-
-Please make sure that you consider copyrights and trademarks when you use names or logos of a company and add a disclaimer to your README.
-You can check other adapters for examples or ask in the developer community. Using a name or logo of a company without permission may cause legal problems for you.
-
-### Getting started
-
-You are almost done, only a few steps left:
-1. Create a new repository on GitHub with the name `ioBroker.nuki-local`
-
-1. Push all files to the GitHub repo. The creator has already set up the local repository for you:  
-    ```bash
-    git push origin main
-    ```
-1. Add a new secret under https://github.com/helfi9999/ioBroker.nuki-local/settings/secrets. It must be named `AUTO_MERGE_TOKEN` and contain a personal access token with push access to the repository, e.g. yours. You can create a new token under https://github.com/settings/tokens.
-
-1. Head over to [src/main.ts](src/main.ts) and start programming!
-
-### Best Practices
-We've collected some [best practices](https://github.com/ioBroker/ioBroker.repositories#development-and-coding-best-practices) regarding ioBroker development and coding in general. If you're new to ioBroker or Node.js, you should
-check them out. If you're already experienced, you should also take a look at them - you might learn something new :)
-
-### State Roles
-When creating state objects, it is important to use the correct role for the state. The role defines how the state should be interpreted by visualizations and other adapters. For a list of available roles and their meanings, please refer to the [state roles documentation](https://www.iobroker.net/#en/documentation/dev/stateroles.md).
-
-**Important:** Do not invent your own custom role names. If you need a role that is not part of the official list, please contact the ioBroker developer community for guidance and discussion about adding new roles.
-
-### Scripts in `package.json`
-Several npm scripts are predefined for your convenience. You can run them using `npm run <scriptname>`
-| Script name | Description |
-|-------------|-------------|
-| `build` | Compile the TypeScript sources. |
-| `watch` | Compile the TypeScript sources and watch for changes. |
-| `test:ts` | Executes the tests you defined in `*.test.ts` files. |
-| `test:package` | Ensures your `package.json` and `io-package.json` are valid. |
-| `test:integration` | Tests the adapter startup with an actual instance of ioBroker. |
-| `test` | Performs a minimal test run on package files and your tests. |
-| `check` | Performs a type-check on your code (without compiling anything). |
-| `coverage` | Generates code coverage using your test files. |
-| `lint` | Runs `ESLint` to check your code for formatting errors and potential bugs. |
-| `translate` | Translates texts in your adapter to all required languages, see [`@iobroker/adapter-dev`](https://github.com/ioBroker/adapter-dev#manage-translations) for more details. |
-| `release` | Creates a new release, see [`@alcalzone/release-script`](https://github.com/AlCalzone/release-script#usage) for more details. |
-
-### Configuring the compilation
-The adapter template uses [esbuild](https://esbuild.github.io/) to compile TypeScript and/or React code. You can configure many compilation settings 
-either in `tsconfig.json` or by changing options for the build tasks. These options are described in detail in the
-[`@iobroker/adapter-dev` documentation](https://github.com/ioBroker/adapter-dev#compile-adapter-files).
-
-### Writing tests
-When done right, testing code is invaluable, because it gives you the 
-confidence to change your code while knowing exactly if and when 
-something breaks. A good read on the topic of test-driven development 
-is https://hackernoon.com/introduction-to-test-driven-development-tdd-61a13bc92d92. 
-Although writing tests before the code might seem strange at first, but it has very 
-clear upsides.
-
-The template provides you with basic tests for the adapter startup and package files.
-It is recommended that you add your own tests into the mix.
-
-### Publishing the adapter
-Using GitHub Actions, you can enable automatic releases on npm whenever you push a new git tag that matches the form 
-`v<major>.<minor>.<patch>`. We **strongly recommend** that you do. The necessary steps are described in `.github/workflows/test-and-release.yml`.
-
-Since you installed the release script, you can create a new
-release simply by calling:
 ```bash
-npm run release
-```
-Additional command line options for the release script are explained in the
-[release-script documentation](https://github.com/AlCalzone/release-script#command-line).
-
-To get your adapter released in ioBroker, please refer to the documentation 
-of [ioBroker.repositories](https://github.com/ioBroker/ioBroker.repositories#requirements-for-adapter-to-get-added-to-the-latest-repository).
-
-### Test the adapter manually with dev-server
-Since you set up `dev-server`, you can use it to run, test and debug your adapter.
-
-You may start `dev-server` by calling from your dev directory:
-```bash
-dev-server watch
+cd /opt/iobroker
+iobroker url /opt/iobroker/ioBroker.nuki-local
 ```
 
-The ioBroker.admin interface will then be available at http://localhost:undefined/
+## MQTT configuration
 
-Please refer to the [`dev-server` documentation](https://github.com/ioBroker/dev-server#command-line) for more details.
+Default MQTT port:
+
+```text
+1883
+```
+
+Default MQTT username:
+
+```text
+nuki
+```
+
+Configure the same MQTT username and password in the Nuki app.
+
+Use the IP address of the ioBroker server as MQTT broker.
+
+Example:
+
+```text
+Broker: 192.168.178.124
+Port: 1883
+Username: nuki
+Password: your configured password
+```
+
+## MQTT persistence
+
+Retained MQTT states are stored using LevelDB.
+
+Example persistence directory:
+
+```text
+/opt/iobroker/iobroker-data/nuki-local.0/mqtt-leveldb
+```
+
+The adapter restores retained Nuki states automatically after a restart.
+
+## Object structure
+
+Each Nuki device is created below:
+
+```text
+nuki-local.0.<NUKI-ID>
+```
+
+Structure:
+
+```text
+<NUKI-ID>
+├── activity
+├── advanced
+├── battery
+├── commands
+├── device
+├── keypad
+├── status
+└── raw
+```
+
+## Status
+
+Available states include:
+
+```text
+status.lockState
+status.lockStateText
+status.locked
+status.doorState
+status.doorStateText
+status.doorOpen
+status.timestamp
+status.iconState
+status.icon
+```
+
+## Battery
+
+```text
+battery.percent
+battery.critical
+battery.charging
+battery.keypadCritical
+battery.doorSensorCritical
+```
+
+## Device information
+
+```text
+device.name
+device.firmware
+device.deviceType
+device.mode
+device.online
+```
+
+## Commands
+
+Commands are available below:
+
+```text
+nuki-local.0.<NUKI-ID>.commands
+```
+
+### Lock
+
+```text
+commands.lock
+```
+
+Internally:
+
+```text
+lockAction = 2
+```
+
+### Unlock
+
+```text
+commands.unlock
+```
+
+Internally:
+
+```text
+lockAction = 1
+```
+
+This unlocks the lock without intentionally pulling the latch.
+
+### Unlatch
+
+```text
+commands.unlatch
+```
+
+Internally:
+
+```text
+lockAction = 3
+```
+
+### Lock'n'Go
+
+```text
+commands.lockNgo
+```
+
+Internally:
+
+```text
+lockAction = 4
+```
+
+### Lock'n'Go with unlatch
+
+```text
+commands.lockNgoUnlatch
+```
+
+Internally:
+
+```text
+lockAction = 5
+```
+
+### Full lock
+
+```text
+commands.fullLock
+```
+
+Internally:
+
+```text
+lockAction = 6
+```
+
+## Keypad and fingerprint
+
+The adapter processes `lockActionEvent` messages.
+
+Example:
+
+```text
+3,0,195249,8193,2
+```
+
+Fields:
+
+```text
+action
+trigger
+authId
+codeId
+source
+```
+
+Keypad source:
+
+```text
+0 = Back button
+1 = Keypad code
+2 = Fingerprint
+```
+
+Relevant ioBroker states:
+
+```text
+keypad.lastType
+keypad.lastUser
+keypad.lastTimestamp
+```
+
+## Configurable keypad users
+
+Users can map a Nuki `codeId` to a custom name in the adapter configuration.
+
+Example:
+
+```text
+Code ID   Name
+8193      User 1
+8192      User 2
+```
+
+The names are not hard-coded into the adapter.
+
+Resolution priority:
+
+```text
+1. Configured Code-ID mapping
+2. Nuki Web API authorization name
+3. Technical fallback
+```
+
+## Activity
+
+```text
+activity.lastAction
+activity.lastActionText
+activity.lastUser
+activity.lastDate
+```
+
+## Advanced data
+
+```text
+advanced.authId
+advanced.codeId
+advanced.source
+advanced.trigger
+advanced.smartlockId
+advanced.serverState
+advanced.authorizations
+```
+
+## Raw MQTT data
+
+Unknown MQTT topics are stored below:
+
+```text
+raw
+```
+
+This helps with debugging and future topic support.
+
+## Nuki Web API
+
+The Web API integration is optional.
+
+MQTT remains the primary local communication method.
+
+The Web API can provide additional information such as:
+
+- authorization names
+- activity logs
+- cloud-side device information
+
+The adapter continues operating locally if the Web API is unavailable.
+
+## Dynamic icons
+
+Available states:
+
+```text
+status.iconState
+status.icon
+```
+
+Possible values:
+
+```text
+locked
+unlocked
+door_open
+door_closed
+charging
+pairing
+unknown
+```
+
+Icon files are stored under:
+
+```text
+admin/icons/Nuki_Vis/
+```
+
+Files:
+
+```text
+nuki_locked.png
+nuki_unlocked.png
+nuki_door_open.png
+nuki_door_closed.png
+nuki_charging.png
+nuki_pairing.png
+nuki_unknown.png
+```
+
+Example icon path:
+
+```text
+/adapter/nuki-local/icons/Nuki_Vis/nuki_locked.png
+```
+
+## Security
+
+Use a strong MQTT password.
+
+Do not expose the integrated MQTT broker directly to the public internet.
+
+Treat the Nuki Web API token as a secret.
+
+Keypad PIN codes are intentionally not stored by the adapter.
+
+## Troubleshooting
+
+Show adapter logs:
+
+```bash
+cd /opt/iobroker
+iobroker logs nuki-local.0 --watch
+```
+
+Build the adapter:
+
+```bash
+cd /opt/iobroker/ioBroker.nuki-local
+npm run build
+```
+
+Install from the local directory:
+
+```bash
+cd /opt/iobroker
+iobroker url /opt/iobroker/ioBroker.nuki-local
+```
+
+Upload adapter files:
+
+```bash
+iobroker upload nuki-local
+```
+
+Restart:
+
+```bash
+iobroker restart nuki-local.0
+```
+
+## Version
+
+Current development version:
+
+```text
+0.1.0
+```
 
 ## Changelog
-<!--
-    Placeholder for the next version (at the beginning of the line):
-    ### **WORK IN PROGRESS**
--->
 
-### **WORK IN PROGRESS**
-* (helfi9999) initial release
+### 0.1.0
+
+Initial functional development version.
+
+- Integrated MQTT broker
+- MQTT authentication
+- LevelDB persistence
+- Retained state restore
+- Smart Lock status
+- Door sensor support
+- Battery information
+- Explicit lock actions
+- Keypad code detection
+- Fingerprint detection
+- Configurable Code-ID user mapping
+- Optional Nuki Web API
+- Activity information
+- Dynamic status icons
 
 ## License
-MIT License
 
-Copyright (c) 2026 helfi9999 <43864283+helfi9999@users.noreply.github.com>
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+MIT
