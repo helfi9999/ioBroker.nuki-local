@@ -380,13 +380,6 @@ cd /opt/iobroker
 iobroker logs nuki-local.0 --watch
 ```
 
-Build the adapter:
-
-```bash
-cd /opt/iobroker/ioBroker.nuki-local
-npm run build
-```
-
 Upload adapter files:
 
 ```bash

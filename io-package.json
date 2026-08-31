@@ -94,14 +94,6 @@
       {
         "admin": ">=7.6.20"
       }
-    ],
-    "protectedNative": [
-      "mqttPassword",
-      "webApiToken"
-    ],
-    "encryptedNative": [
-      "mqttPassword",
-      "webApiToken"
     ]
   },
   "native": {},
@@ -128,5 +120,13 @@
       },
       "native": {}
     }
+  ],
+  "protectedNative": [
+    "mqttPassword",
+    "webApiToken"
+  ],
+  "encryptedNative": [
+    "mqttPassword",
+    "webApiToken"
   ]
 }
