@@ -1,14 +1,15 @@
-// This file extends the AdapterConfig type from "@iobroker/types"
-
-// Augment the globally declared type ioBroker.AdapterConfig
 declare global {
     namespace ioBroker {
         interface AdapterConfig {
-            option1: boolean;
-            option2: string;
+            mqttPort: number;
+            mqttUsername: string;
+            mqttPassword: string;
+
+            webApiEnabled: boolean;
+            webApiToken: string;
+            webApiInterval: number;
         }
     }
 }
 
-// this is required so the above AdapterConfig is found by TypeScript / type checking
 export {};

@@ -1,26 +1,46 @@
 {
-    "i18n": true,
     "type": "panel",
+    "i18n": true,
     "items": {
-        "option1": {
-            "type": "checkbox",
-            "label": "option1",
-            "newLine": true,
-            "xs": 12,
-            "sm": 12,
-            "md": 6,
-            "lg": 4,
-            "xl": 4
+        "mqttPort": {
+            "type": "number",
+            "label": "MQTT port",
+            "help": "Port used by the integrated MQTT broker",
+            "min": 1,
+            "max": 65535,
+            "default": 1883
         },
-        "option2": {
+        "mqttUsername": {
             "type": "text",
-            "label": "option2",
-            "newLine": true,
-            "xs": 12,
-            "sm": 12,
-            "md": 6,
-            "lg": 4,
-            "xl": 4
+            "label": "MQTT username",
+            "help": "Username used by the Nuki Smart Lock",
+            "default": "nuki"
+        },
+        "mqttPassword": {
+            "type": "password",
+            "label": "MQTT password",
+            "help": "Password used by the Nuki Smart Lock"
+        },
+        "webApiEnabled": {
+            "type": "checkbox",
+            "label": "Enable Nuki Web API",
+            "help": "Enable additional cloud data such as users, authorizations and activity logs",
+            "default": false
+        },
+        "webApiToken": {
+            "type": "password",
+            "label": "Nuki Web API token",
+            "help": "Personal API token used to access the Nuki Web API",
+            "hidden": "!data.webApiEnabled"
+        },
+        "webApiInterval": {
+            "type": "number",
+            "label": "Web API update interval",
+            "help": "Interval in seconds for updating Nuki Web API data",
+            "min": 60,
+            "max": 86400,
+            "default": 300,
+            "hidden": "!data.webApiEnabled"
         }
     }
 }
