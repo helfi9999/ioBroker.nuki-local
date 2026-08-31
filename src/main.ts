@@ -222,12 +222,6 @@ class NukiLocal extends utils.Adapter {
         );
     }
 
-    /*
-     * ============================================================
-     * MQTT
-     * ============================================================
-     */
-
     private async startMqttBroker(): Promise<void> {
         const port =
             Number(
@@ -680,12 +674,6 @@ class NukiLocal extends utils.Adapter {
         }
     }
 
-    /*
-     * ============================================================
-     * DEVICE INITIALIZATION
-     * ============================================================
-     */
-
     private async ensureDevice(
         deviceId: string,
     ): Promise<void> {
@@ -1118,10 +1106,7 @@ class NukiLocal extends utils.Adapter {
             },
         ];
 
-        for (
-            const item
-            of defaults
-        ) {
+        for (const item of defaults) {
             const state =
                 await this.getStateAsync(
                     item.id,
@@ -1148,10 +1133,7 @@ class NukiLocal extends utils.Adapter {
             `${deviceId}.web`,
         ];
 
-        for (
-            const id
-            of legacy
-        ) {
+        for (const id of legacy) {
             const object =
                 await this.getObjectAsync(
                     id,
@@ -1226,12 +1208,6 @@ class NukiLocal extends utils.Adapter {
             );
         }
     }
-
-    /*
-     * ============================================================
-     * STATUS / EVENTS
-     * ============================================================
-     */
 
     private async handleLockState(
         deviceId: string,
@@ -1403,12 +1379,6 @@ class NukiLocal extends utils.Adapter {
             true,
         );
 
-        /*
-         * Priorität:
-         * 1. Manuelle Zuordnung Code-ID -> Name
-         * 2. Web API anhand authId
-         * 3. Technischer Fallback
-         */
         const configuredKeypadUser =
             codeId > 0
                 ? this.findConfiguredKeypadUser(
@@ -1553,12 +1523,6 @@ class NukiLocal extends utils.Adapter {
             );
     }
 
-    /*
-     * ============================================================
-     * COMMANDS
-     * ============================================================
-     */
-
     private async createCommandState(
         id: string,
         name: string,
@@ -1592,6 +1556,22 @@ class NukiLocal extends utils.Adapter {
             );
         }
     }
+
+    /*
+     * ============================================================
+     * COMMANDS
+     *
+     * WICHTIG:
+     *
+     * lock    = lockAction 2
+     * unlock  = lockAction 1
+     * unlatch = lockAction 3
+     *
+     * Damit wird bei "unlock" explizit nur
+     * entriegelt und nicht das einfache
+     * MQTT-Topic "unlock=true" verwendet.
+     * ============================================================
+     */
 
     private async onStateChange(
         id: string,
@@ -1643,17 +1623,17 @@ class NukiLocal extends utils.Adapter {
 
         try {
             switch (command) {
-                case "lock":
+                case "unlock":
                     await this.publishNukiCommand(
-                        `nuki/${deviceId}/lock`,
-                        "true",
+                        `nuki/${deviceId}/lockAction`,
+                        "1",
                     );
                     break;
 
-                case "unlock":
+                case "lock":
                     await this.publishNukiCommand(
-                        `nuki/${deviceId}/unlock`,
-                        "true",
+                        `nuki/${deviceId}/lockAction`,
+                        "2",
                     );
                     break;
 
@@ -1789,12 +1769,6 @@ class NukiLocal extends utils.Adapter {
         );
     }
 
-    /*
-     * ============================================================
-     * WEB API
-     * ============================================================
-     */
-
     private async startWebApi(): Promise<void> {
         const token =
             String(
@@ -1905,10 +1879,7 @@ class NukiLocal extends utils.Adapter {
             );
         }
 
-        for (
-            const device
-            of devices
-        ) {
+        for (const device of devices) {
             const smartlockId =
                 Number(
                     device.smartlockId,
@@ -2301,10 +2272,7 @@ class NukiLocal extends utils.Adapter {
                 string
             >();
 
-        for (
-            const auth
-            of authorizations
-        ) {
+        for (const auth of authorizations) {
             if (
                 typeof auth.authId ===
                     "number" &&
@@ -2459,12 +2427,6 @@ class NukiLocal extends utils.Adapter {
             );
         }
     }
-
-    /*
-     * ============================================================
-     * HELPERS
-     * ============================================================
-     */
 
     private getMappedText(
         map:
@@ -2668,12 +2630,6 @@ class NukiLocal extends utils.Adapter {
             "_",
         );
     }
-
-    /*
-     * ============================================================
-     * UNLOAD
-     * ============================================================
-     */
 
     private onUnload(
         callback: () => void,
