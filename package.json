@@ -16,7 +16,6 @@
     "local",
     "door-lock",
     "smarthome",
-    "iobroker",
     "ioBroker"
   ],
   "repository": {
