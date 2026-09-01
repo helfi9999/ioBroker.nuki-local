@@ -1,29 +1,30 @@
+# Dependabot will run on day 10 of each month at 02:21 (Europe/Berlin timezone)
 version: 2
-
 updates:
-  - package-ecosystem: npm
-    directory: "/"
+
+  - package-ecosystem: 'npm'
+    directory: '/'
     schedule:
-      interval: monthly
-      time: "00:05"
-      timezone: Europe/Berlin
+      interval: 'cron'
+      timezone: 'Europe/Berlin'
+      cronjob: '21 2 10 * *'
     cooldown:
       default-days: 7
     open-pull-requests-limit: 15
     assignees:
-      - helfi9999
-    versioning-strategy: increase
+      - 'helfi9999'
+    versioning-strategy: 'increase'
     ignore:
-      - dependency-name: "@types/node"
+      - dependency-name: '@types/node'
         update-types:
-          - "version-update:semver-major"
+          - 'version-update:semver-major'
 
-  - package-ecosystem: github-actions
-    directory: "/"
+  - package-ecosystem: 'github-actions'
+    directory: '/'
     schedule:
-      interval: monthly
-      time: "00:05"
-      timezone: Europe/Berlin
+      interval: 'cron'
+      timezone: 'Europe/Berlin'
+      cronjob: '21 2 10 * *'
     open-pull-requests-limit: 15
     assignees:
-      - helfi9999
+      - 'helfi9999'
