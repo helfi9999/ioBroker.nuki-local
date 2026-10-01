@@ -2,6 +2,8 @@
 
 Local Nuki Smart Lock integration for ioBroker using an integrated MQTT broker.
 
+Manufacturer and product information: [Nuki](https://nuki.io/).
+
 The adapter is designed for direct local communication with compatible Nuki Smart Locks over MQTT.
 Optionally, the Nuki Web API can be enabled to enrich the local MQTT data with authorization names and activity information.
 
@@ -391,15 +393,17 @@ Restart:
 iobroker restart nuki-local.0
 ```
 
-## Version
-
-Current development version:
-
-```text
-0.1.0
-```
-
 ## Changelog
+
+### **WORK IN PROGRESS**
+
+- (helfi9999) Changed state texts to English and completed configuration label translations.
+- (helfi9999) Corrected command button, authorization JSON and timestamp roles.
+- (helfi9999) Added a Web API request timeout and MQTT device ID validation.
+- (helfi9999) Updated Aedes, Node.js types, testing tools and transitive dependencies.
+- (helfi9999) Added Node.js 26 testing and updated the workflow check action.
+- (helfi9999) Updated documentation, keywords and maintainer contact information.
+- (helfi9999) Adapter requires admin >= 7.8.23 now.
 
 ### 0.1.2
 
@@ -428,6 +432,6 @@ Initial functional development version.
 
 ## License
 
-MIT License
+[MIT License](LICENSE)
 
 Copyright (c) 2026 helfi9999

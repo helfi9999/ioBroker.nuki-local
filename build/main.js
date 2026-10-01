@@ -40,37 +40,37 @@ const MODES = {
   3: "Continuous mode"
 };
 const LOCK_STATES = {
-  0: "Nicht kalibriert",
-  1: "Zugesperrt",
-  2: "Wird aufgesperrt",
-  3: "Aufgesperrt",
-  4: "Wird zugesperrt",
-  5: "Falle gezogen",
-  6: "Aufgesperrt (Lock'n'Go)",
-  7: "Falle wird gezogen",
+  0: "Uncalibrated",
+  1: "Locked",
+  2: "Unlocking",
+  3: "Unlocked",
+  4: "Locking",
+  5: "Unlatched",
+  6: "Unlocked (Lock'n'Go)",
+  7: "Unlatching",
   253: "Boot run",
-  254: "Motor blockiert",
-  255: "Unbekannter Zustand"
+  254: "Motor blocked",
+  255: "Unknown state"
 };
 const DOOR_STATES = {
-  1: "T\xFCrsensor deaktiviert",
-  2: "T\xFCr geschlossen",
-  3: "T\xFCr ge\xF6ffnet",
-  4: "T\xFCrstatus unbekannt",
-  5: "T\xFCrsensor wird kalibriert",
-  16: "T\xFCrsensor nicht kalibriert",
-  240: "T\xFCrsensor manipuliert",
-  255: "Unbekannt"
+  1: "Door sensor disabled",
+  2: "Door closed",
+  3: "Door open",
+  4: "Door state unknown",
+  5: "Door sensor calibrating",
+  16: "Door sensor uncalibrated",
+  240: "Door sensor tampered",
+  255: "Unknown"
 };
 const LOCK_ACTIONS = {
-  1: "Aufsperren",
-  2: "Zusperren",
-  3: "Falle ziehen",
+  1: "Unlock",
+  2: "Lock",
+  3: "Unlatch",
   4: "Lock'n'Go",
-  5: "Lock'n'Go mit Falle ziehen",
-  6: "Vollst\xE4ndig zusperren",
-  80: "Fob ohne Aktion",
-  90: "Button ohne Aktion"
+  5: "Lock'n'Go with unlatch",
+  6: "Full lock",
+  80: "Fob without action",
+  90: "Button without action"
 };
 const NUKI_ICONS = {
   locked: "/adapter/nuki-local/icons/Nuki_Vis/nuki_locked.png",
@@ -236,6 +236,10 @@ class NukiLocal extends utils.Adapter {
       if (!deviceId || !property) {
         return;
       }
+      if (this.sanitizeId(deviceId) !== deviceId) {
+        this.log.debug("Ignoring MQTT message with invalid device ID");
+        return;
+      }
       await this.ensureDevice(deviceId);
       switch (property) {
         case "name":
@@ -260,7 +264,7 @@ class NukiLocal extends utils.Adapter {
           await this.setBooleanState(`${deviceId}.device.online`, "Online", payload, "indicator.connected");
           break;
         case "timestamp":
-          await this.setStringState(`${deviceId}.status.timestamp`, "Timestamp", payload);
+          await this.setStringState(`${deviceId}.status.timestamp`, "Timestamp", payload, "date");
           break;
         case "batteryChargeState":
           await this.setNumberState(`${deviceId}.battery.percent`, "Battery", payload, "%", "value.battery");
@@ -381,7 +385,7 @@ class NukiLocal extends utils.Adapter {
     await this.ensureMappedStateObject(`${deviceId}.status.doorState`, "Door state", DOOR_STATES);
     await this.ensureStateObject(`${deviceId}.status.doorStateText`, "Door state text", "string", "text");
     await this.ensureStateObject(`${deviceId}.status.doorOpen`, "Door open", "boolean", "sensor.door");
-    await this.ensureStateObject(`${deviceId}.status.timestamp`, "Timestamp", "string", "text");
+    await this.ensureStateObject(`${deviceId}.status.timestamp`, "Timestamp", "string", "date");
     await this.ensureStateObject(`${deviceId}.status.iconState`, "Icon state", "string", "text");
     await this.ensureStateObject(`${deviceId}.status.icon`, "Icon", "string", "text");
     await this.ensureStateObject(`${deviceId}.battery.percent`, "Battery", "number", "value.battery", false, "%");
@@ -647,13 +651,13 @@ class NukiLocal extends utils.Adapter {
     await this.setStateAsync(`${deviceId}.advanced.trigger`, trigger, true);
     const configuredKeypadUser = codeId > 0 ? this.findConfiguredKeypadUser(codeId) : void 0;
     const resolvedUserName = this.findAuthorizationName(deviceId, authId);
-    const displayUser = (_a = configuredKeypadUser != null ? configuredKeypadUser : resolvedUserName) != null ? _a : codeId > 0 ? `Unbekannt (Code-ID ${codeId})` : `Unbekannt (Auth-ID ${authId})`;
+    const displayUser = (_a = configuredKeypadUser != null ? configuredKeypadUser : resolvedUserName) != null ? _a : codeId > 0 ? `Unknown (Code-ID ${codeId})` : `Unknown (Auth-ID ${authId})`;
     await this.setStringState(`${deviceId}.activity.lastUser`, "Last user", displayUser);
     if (codeId > 0) {
-      let type = `Quelle ${source}`;
+      let type = `Source ${source}`;
       switch (source) {
         case 0:
-          type = "Back-Taste";
+          type = "Back button";
           break;
         case 1:
           type = "Code";
@@ -704,7 +708,7 @@ class NukiLocal extends utils.Adapter {
         name,
         type: "boolean",
         role: "button",
-        read: true,
+        read: false,
         write: true,
         def: false
       },
@@ -795,7 +799,7 @@ class NukiLocal extends utils.Adapter {
     await this.setStringState(
       `${deviceId}.commands.lastResultText`,
       "Last command result text",
-      result === 0 ? "Erfolgreich" : `Fehler ${result}`
+      result === 0 ? "Successful" : `Error ${result}`
     );
   }
   /*
@@ -873,6 +877,7 @@ class NukiLocal extends utils.Adapter {
       throw new Error("Nuki Web API token missing");
     }
     const response = await fetch(`https://api.nuki.io${path}`, {
+      signal: AbortSignal.timeout(15e3),
       method: "GET",
       headers: {
         Accept: "application/json",
@@ -981,7 +986,12 @@ class NukiLocal extends utils.Adapter {
       enabled: auth.enabled,
       remoteAllowed: auth.remoteAllowed
     }));
-    await this.setStringState(`${deviceId}.advanced.authorizations`, "Authorizations", JSON.stringify(safe));
+    await this.setStringState(
+      `${deviceId}.advanced.authorizations`,
+      "Authorizations",
+      JSON.stringify(safe),
+      "json"
+    );
   }
   async storeWebLogs(deviceId, logs) {
     if (logs.length === 0) {
@@ -1022,7 +1032,7 @@ class NukiLocal extends utils.Adapter {
    */
   getMappedText(map, value) {
     var _a;
-    return (_a = map[value]) != null ? _a : `Unbekannt (${value})`;
+    return (_a = map[value]) != null ? _a : `Unknown (${value})`;
   }
   async ensureStateObject(id, name, type, role, write = false, unit) {
     await this.extendObjectAsync(id, {
@@ -1058,8 +1068,8 @@ class NukiLocal extends utils.Adapter {
       native: {}
     });
   }
-  async setStringState(id, name, value) {
-    await this.ensureStateObject(id, name, "string", "text");
+  async setStringState(id, name, value, role = "text") {
+    await this.ensureStateObject(id, name, "string", role);
     await this.setStateAsync(id, value, true);
   }
   async setNumberState(id, name, value, unit, role = "value") {

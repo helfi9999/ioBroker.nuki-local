@@ -1,19 +1,19 @@
 {
     "nuki-local adapter settings": "Configurações do adaptador para nuki-local",
-    "MQTT port": "MQTT port",
+    "MQTT port": "Porta MQTT",
     "Port used by the integrated MQTT broker": "Porta utilizada pelo broker MQTT integrado",
-    "MQTT username": "MQTT username",
+    "MQTT username": "Nome de utilizador MQTT",
     "Username used by the Nuki Smart Lock": "Nome de utilizador usado pela fechadura Nuki Smart Lock",
-    "MQTT password": "MQTT password",
+    "MQTT password": "Palavra-passe MQTT",
     "Password used by the Nuki Smart Lock": "Palavra-passe usada pela fechadura Nuki Smart Lock",
-    "Enable Nuki Web API": "Enable Nuki Web API",
+    "Enable Nuki Web API": "Ativar a API Web da Nuki",
     "Enable additional cloud data such as users, authorizations and activity logs": "Ativar dados adicionais da cloud, como utilizadores, autorizações e registos de atividade",
-    "Nuki Web API token": "Nuki Web API token",
+    "Nuki Web API token": "Token da API Web da Nuki",
     "Personal API token used to access the Nuki Web API": "Token API pessoal utilizado para aceder à Nuki Web API",
-    "Web API update interval": "Web API update interval",
+    "Web API update interval": "Intervalo de atualização da API Web",
     "Interval in seconds for updating Nuki Web API data": "Intervalo em segundos para atualizar os dados da Nuki Web API",
-    "Keypad / Fingerprint users": "Keypad / Fingerprint users",
+    "Keypad / Fingerprint users": "Utilizadores do teclado / de impressão digital",
     "Assign Nuki Code IDs to user names. The Code ID can be found in the lockActionEvent MQTT message.": "Associe IDs de código Nuki a nomes de utilizador. O ID do código pode ser encontrado na mensagem MQTT lockActionEvent.",
-    "Code ID": "Code ID",
-    "Name": "Name"
+    "Code ID": "ID do código",
+    "Name": "Nome"
 }
