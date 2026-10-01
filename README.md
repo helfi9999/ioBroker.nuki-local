@@ -434,4 +434,4 @@ Initial functional development version.
 
 [MIT License](LICENSE)
 
-Copyright (c) 2026 helfi9999
+Copyright (c) 2026 helfi9999 <helfi9999@gmail.com>

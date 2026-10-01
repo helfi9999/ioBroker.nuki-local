@@ -15,7 +15,8 @@
     "mqtt",
     "local",
     "door-lock",
-    "smarthome"
+    "smarthome",
+    "ioBroker"
   ],
   "repository": {
     "type": "git",
