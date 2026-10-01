@@ -1,19 +1,19 @@
 {
     "nuki-local adapter settings": "nuki-local的适配器设置",
-    "MQTT port": "MQTT port",
+    "MQTT port": "MQTT 端口",
     "Port used by the integrated MQTT broker": "集成 MQTT 代理使用的端口",
-    "MQTT username": "MQTT username",
+    "MQTT username": "MQTT 用户名",
     "Username used by the Nuki Smart Lock": "Nuki 智能锁使用的用户名",
-    "MQTT password": "MQTT password",
+    "MQTT password": "MQTT 密码",
     "Password used by the Nuki Smart Lock": "Nuki 智能锁使用的密码",
-    "Enable Nuki Web API": "Enable Nuki Web API",
+    "Enable Nuki Web API": "启用 Nuki Web API",
     "Enable additional cloud data such as users, authorizations and activity logs": "启用额外的云端数据，例如用户、授权和活动日志",
-    "Nuki Web API token": "Nuki Web API token",
+    "Nuki Web API token": "Nuki Web API 令牌",
     "Personal API token used to access the Nuki Web API": "用于访问 Nuki Web API 的个人 API 令牌",
-    "Web API update interval": "Web API update interval",
+    "Web API update interval": "Web API 更新间隔",
     "Interval in seconds for updating Nuki Web API data": "更新 Nuki Web API 数据的时间间隔（秒）",
-    "Keypad / Fingerprint users": "Keypad / Fingerprint users",
+    "Keypad / Fingerprint users": "键盘 / 指纹用户",
     "Assign Nuki Code IDs to user names. The Code ID can be found in the lockActionEvent MQTT message.": "将 Nuki Code ID 分配给用户名。Code ID 可在 MQTT 消息 lockActionEvent 中找到。",
-    "Code ID": "Code ID",
-    "Name": "Name"
+    "Code ID": "代码 ID",
+    "Name": "名称"
 }
