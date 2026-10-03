@@ -430,6 +430,8 @@ Initial functional development version.
 - Activity information
 - Dynamic status icons
 
+[Older changelogs can be found there](CHANGELOG_OLD.md)
+
 ## License
 
 [MIT License](LICENSE)
