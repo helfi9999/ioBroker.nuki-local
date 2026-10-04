@@ -397,6 +397,11 @@ iobroker restart nuki-local.0
 
 ### **WORK IN PROGRESS**
 
+- (helfi9999) Replaced the default adapter icon with a custom Nuki icon.
+- (helfi9999) Limited the Web API polling interval to 60–86400 seconds and prevented overlapping updates.
+- (helfi9999) Corrected access and activity date roles and removed an unused translation key.
+- (helfi9999) Reset the code ID when importing Web API activity data.
+
 - (helfi9999) Changed state texts to English and completed configuration label translations.
 - (helfi9999) Corrected command button, authorization JSON and timestamp roles.
 - (helfi9999) Added a Web API request timeout and MQTT device ID validation.

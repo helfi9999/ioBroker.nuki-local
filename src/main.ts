@@ -119,7 +119,9 @@ class NukiLocal extends utils.Adapter {
 
     private mqttPersistence: AedesPersistence | null = null;
 
-    private webApiTimer: ioBroker.Interval | undefined | null = null;
+    private webApiTimer: ioBroker.Timeout | undefined | null = null;
+
+    private webApiStopping = false;
 
     private readonly initializedDevices = new Set<string>();
 
@@ -559,7 +561,7 @@ class NukiLocal extends utils.Adapter {
 
         await this.ensureStateObject(`${deviceId}.keypad.lastUser`, "Last user", "string", "text");
 
-        await this.ensureStateObject(`${deviceId}.keypad.lastTimestamp`, "Last access timestamp", "string", "text");
+        await this.ensureStateObject(`${deviceId}.keypad.lastTimestamp`, "Last access timestamp", "string", "date");
 
         await this.ensureStateObject(`${deviceId}.activity.lastAction`, "Last action", "number", "value");
 
@@ -567,7 +569,7 @@ class NukiLocal extends utils.Adapter {
 
         await this.ensureStateObject(`${deviceId}.activity.lastUser`, "Last user", "string", "text");
 
-        await this.ensureStateObject(`${deviceId}.activity.lastDate`, "Last date", "string", "text");
+        await this.ensureStateObject(`${deviceId}.activity.lastDate`, "Last date", "string", "date");
 
         await this.ensureStateObject(`${deviceId}.device.name`, "Name", "string", "text");
 
@@ -901,7 +903,7 @@ class NukiLocal extends utils.Adapter {
             this.getMappedText(LOCK_ACTIONS, action),
         );
 
-        await this.setStringState(`${deviceId}.activity.lastDate`, "Last date", now);
+        await this.setStringState(`${deviceId}.activity.lastDate`, "Last date", now, "date");
 
         await this.setStateAsync(`${deviceId}.advanced.authId`, authId, true);
 
@@ -943,7 +945,7 @@ class NukiLocal extends utils.Adapter {
 
             await this.setStringState(`${deviceId}.keypad.lastUser`, "Last user", displayUser);
 
-            await this.setStringState(`${deviceId}.keypad.lastTimestamp`, "Last access timestamp", now);
+            await this.setStringState(`${deviceId}.keypad.lastTimestamp`, "Last access timestamp", now, "date");
 
             if (source === 2) {
                 this.log.info(`Fingerprint detected: authId=${authId}, codeId=${codeId}, user=${displayUser}`);
@@ -1132,7 +1134,7 @@ class NukiLocal extends utils.Adapter {
             return;
         }
 
-        const intervalSeconds = Math.max(60, Number(this.config.webApiInterval) || 300);
+        const intervalSeconds = Math.min(86400, Math.max(60, Number(this.config.webApiInterval) || 300));
 
         this.log.info(`Nuki Web API enabled, update interval: ${intervalSeconds} seconds`);
 
@@ -1144,12 +1146,30 @@ class NukiLocal extends utils.Adapter {
             this.log.warn(`Initial Nuki Web API update failed: ${message}`);
         }
 
-        this.webApiTimer = this.setInterval(() => {
-            void this.updateNukiWebData().catch(error => {
-                const message = error instanceof Error ? error.message : String(error);
+        this.scheduleWebApiUpdate(intervalSeconds);
+    }
 
-                this.log.warn(`Nuki Web API update failed: ${message}`);
-            });
+    private scheduleWebApiUpdate(intervalSeconds: number): void {
+        if (this.webApiStopping) {
+            return;
+        }
+
+        this.webApiTimer = this.setTimeout(() => {
+            this.webApiTimer = null;
+
+            if (this.webApiStopping) {
+                return;
+            }
+
+            void this.updateNukiWebData()
+                .catch(error => {
+                    const message = error instanceof Error ? error.message : String(error);
+
+                    this.log.warn(`Nuki Web API update failed: ${message}`);
+                })
+                .finally(() => {
+                    this.scheduleWebApiUpdate(intervalSeconds);
+                });
         }, intervalSeconds * 1000);
     }
 
@@ -1413,8 +1433,10 @@ class NukiLocal extends utils.Adapter {
         }
 
         if (typeof last.date === "string") {
-            await this.setStringState(`${deviceId}.activity.lastDate`, "Last date", last.date);
+            await this.setStringState(`${deviceId}.activity.lastDate`, "Last date", last.date, "date");
         }
+
+        await this.setStateAsync(`${deviceId}.advanced.codeId`, 0, true);
 
         if (typeof last.authId === "number") {
             await this.setStateAsync(`${deviceId}.advanced.authId`, last.authId, true);
@@ -1538,10 +1560,12 @@ class NukiLocal extends utils.Adapter {
      */
 
     private onUnload(callback: () => void): void {
+        this.webApiStopping = true;
+
         void (async () => {
             try {
                 if (this.webApiTimer) {
-                    clearInterval(this.webApiTimer);
+                    this.clearTimeout(this.webApiTimer);
 
                     this.webApiTimer = null;
                 }

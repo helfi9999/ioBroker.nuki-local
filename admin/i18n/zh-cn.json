@@ -1,5 +1,4 @@
 {
-    "nuki-local adapter settings": "nuki-local的适配器设置",
     "MQTT port": "MQTT 端口",
     "Port used by the integrated MQTT broker": "集成 MQTT 代理使用的端口",
     "MQTT username": "MQTT 用户名",
