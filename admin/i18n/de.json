@@ -1,5 +1,4 @@
 {
-    "nuki-local adapter settings": "Adaptereinstellungen für nuki-local",
     "MQTT port": "MQTT-Port",
     "Port used by the integrated MQTT broker": "Port des integrierten MQTT-Brokers",
     "MQTT username": "MQTT-Benutzername",
