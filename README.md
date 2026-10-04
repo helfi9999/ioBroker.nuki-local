@@ -394,8 +394,7 @@ iobroker restart nuki-local.0
 ```
 
 ## Changelog
-
-### **WORK IN PROGRESS**
+### 0.1.3 (2026-10-04)
 
 - (helfi9999) Replaced the default adapter icon with a custom Nuki icon.
 - (helfi9999) Limited the Web API polling interval to 60–86400 seconds and prevented overlapping updates.
