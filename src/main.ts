@@ -978,10 +978,14 @@ class NukiLocal extends utils.Adapter {
 
             await this.setStringState(`${deviceId}.keypad.lastTimestamp`, "Last access timestamp", now, "date");
 
-            if (source === 2) {
-                this.log.info(`Fingerprint detected: authId=${authId}, codeId=${codeId}, user=${displayUser}`);
-            } else if (source === 1) {
-                this.log.info(`Keypad code detected: authId=${authId}, codeId=${codeId}, user=${displayUser}`);
+            if (source === 2 || source === 1) {
+                const nameState = await this.getStateAsync(`${deviceId}.device.name`);
+                const name =
+                    typeof nameState?.val === "string" && nameState.val.trim() ? nameState.val.trim() : deviceId;
+                const accessType = source === 2 ? "Fingerprint" : "Keypad";
+                const actionText = this.getMappedText(LOCK_ACTIONS, action);
+
+                this.log.info(`${name}: ${accessType} access by ${displayUser} (${actionText})`);
             }
         }
 

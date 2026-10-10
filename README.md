@@ -397,6 +397,8 @@ iobroker restart nuki-local.0
 
 ### **WORK IN PROGRESS**
 
+- (helfi9999) Added readable fingerprint and keypad access logs with device name, user name and action.
+
 - (helfi9999) Moved raw MQTT messages to debug logging.
 - (helfi9999) Added readable lock and door state change logs using the device name, suppressing duplicate and initial states.
 
