@@ -125,6 +125,8 @@ class NukiLocal extends utils.Adapter {
 
     private readonly initializedDevices = new Set<string>();
 
+    private readonly lastLoggedStates = new Map<string, number>();
+
     private readonly initializingDevices = new Map<string, Promise<void>>();
 
     private readonly webSmartlockIds = new Map<string, number>();
@@ -255,7 +257,7 @@ class NukiLocal extends utils.Adapter {
 
             const value = packet.payload.toString();
 
-            this.log.info(`Nuki MQTT: ${packet.topic} = ${value}`);
+            this.log.debug(`Nuki MQTT: ${packet.topic} = ${value}`);
 
             void this.handleNukiMessage(packet.topic, value);
         });
@@ -822,12 +824,39 @@ class NukiLocal extends utils.Adapter {
      * ============================================================
      */
 
+    private async logStatusChange(
+        deviceId: string,
+        property: string,
+        value: number,
+        labels: Record<number, string>,
+    ): Promise<void> {
+        const key = `${deviceId}.${property}`;
+        const previous = this.lastLoggedStates.get(key);
+
+        if (previous === value) {
+            return;
+        }
+
+        this.lastLoggedStates.set(key, value);
+
+        if (previous === undefined) {
+            return;
+        }
+
+        const nameState = await this.getStateAsync(`${deviceId}.device.name`);
+        const name = typeof nameState?.val === "string" && nameState.val.trim() ? nameState.val.trim() : deviceId;
+
+        this.log.info(`${name}: ${this.getMappedText(labels, value)}`);
+    }
+
     private async handleLockState(deviceId: string, payload: string): Promise<void> {
         const state = Number(payload);
 
         if (!Number.isFinite(state)) {
             return;
         }
+
+        await this.logStatusChange(deviceId, "lockState", state, LOCK_STATES);
 
         await this.setMappedNumberState(`${deviceId}.status.lockState`, "Lock state", payload, LOCK_STATES);
 
@@ -848,6 +877,8 @@ class NukiLocal extends utils.Adapter {
         if (!Number.isFinite(state)) {
             return;
         }
+
+        await this.logStatusChange(deviceId, "doorState", state, DOOR_STATES);
 
         await this.setMappedNumberState(`${deviceId}.status.doorState`, "Door state", payload, DOOR_STATES);
 

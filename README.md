@@ -394,6 +394,12 @@ iobroker restart nuki-local.0
 ```
 
 ## Changelog
+
+### **WORK IN PROGRESS**
+
+- (helfi9999) Moved raw MQTT messages to debug logging.
+- (helfi9999) Added readable lock and door state change logs using the device name, suppressing duplicate and initial states.
+
 ### 0.1.3 (2026-10-04)
 
 - (helfi9999) Replaced the default adapter icon with a custom Nuki icon.
