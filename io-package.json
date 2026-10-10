@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "nuki-local",
-    "version": "0.1.3",
+    "version": "0.1.4",
     "news": {
+      "0.1.4": {
+        "en": "Improved lock, door, fingerprint and keypad logs with device and user names. Raw MQTT messages now use debug logging; duplicate and initial state messages are suppressed.",
+        "de": "Lesbarere Schloss-, Tür-, Fingerprint- und Keypad-Meldungen mit Geräte- und Benutzernamen. MQTT-Rohmeldungen erscheinen jetzt im Debug-Log; doppelte und initiale Statusmeldungen werden unterdrückt.",
+        "ru": "Улучшены сообщения о замке, двери, отпечатках пальцев и клавиатуре с именами устройств и пользователей. Исходные сообщения MQTT перенесены в журнал отладки; повторные и начальные сообщения о состоянии не выводятся.",
+        "pt": "Melhorados os logs da fechadura, porta, impressão digital e teclado com nomes de dispositivos e usuários. Mensagens MQTT brutas usam o nível debug; estados duplicados e iniciais não são registrados.",
+        "nl": "Duidelijkere logmeldingen voor slot, deur, vingerafdruk en keypad met apparaat- en gebruikersnamen. Ruwe MQTT-berichten gebruiken nu debug; dubbele en eerste statusmeldingen worden onderdrukt.",
+        "fr": "Messages du verrou, de la porte, des empreintes et du clavier améliorés avec les noms des appareils et des utilisateurs. Les messages MQTT bruts utilisent le niveau debug ; les états répétés et initiaux ne sont pas journalisés.",
+        "it": "Migliorati i messaggi di serratura, porta, impronta digitale e tastierino con nomi dei dispositivi e degli utenti. I messaggi MQTT grezzi usano il livello debug; gli stati duplicati e iniziali non vengono registrati.",
+        "es": "Mejorados los mensajes de cerradura, puerta, huella digital y teclado con nombres de dispositivos y usuarios. Los mensajes MQTT sin procesar usan el nivel debug; se omiten los estados duplicados e iniciales.",
+        "pl": "Czytelniejsze komunikaty zamka, drzwi, odcisków palców i klawiatury z nazwami urządzeń i użytkowników. Surowe komunikaty MQTT używają poziomu debug; powtórzone i początkowe stany nie są zapisywane w logu.",
+        "uk": "Покращено повідомлення про замок, двері, відбитки пальців і клавіатуру з іменами пристроїв та користувачів. Необроблені повідомлення MQTT перенесено на рівень debug; повторні й початкові стани не виводяться.",
+        "zh-cn": "改进锁、门、指纹和键盘日志，显示设备和用户名称。原始 MQTT 消息改为 debug 级别；不再记录重复和初始状态消息。"
+      },
       "0.1.3": {
         "en": "New adapter icon. Web API polling limited to 60–86400 seconds without overlapping updates. Corrected state roles, English state texts and configuration translations. Added request timeout and MQTT device ID validation. Reset code IDs when importing Web API activity data. Updated dependencies, tests and documentation. Requires admin >= 7.8.23.",
         "de": "Neues Adapter-Icon. Web-API-Abfrageintervall auf 60–86400 Sekunden begrenzt und überlappende Abfragen verhindert. Datenpunktrollen, englische Zustandstexte und Konfigurationsübersetzungen korrigiert. Anfrage-Timeout und MQTT-Geräte-ID-Prüfung ergänzt. Code-IDs beim Import von Web-API-Aktivitätsdaten zurückgesetzt. Abhängigkeiten, Tests und Dokumentation aktualisiert. Benötigt admin >= 7.8.23.",

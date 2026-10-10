@@ -395,7 +395,7 @@ iobroker restart nuki-local.0
 
 ## Changelog
 
-### **WORK IN PROGRESS**
+### 0.1.4 (2026-10-10)
 
 - (helfi9999) Added readable fingerprint and keypad access logs with device name, user name and action.
 
