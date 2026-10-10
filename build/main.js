@@ -89,6 +89,7 @@ class NukiLocal extends utils.Adapter {
   webApiTimer = null;
   webApiStopping = false;
   initializedDevices = /* @__PURE__ */ new Set();
+  lastLoggedStates = /* @__PURE__ */ new Map();
   initializingDevices = /* @__PURE__ */ new Map();
   webSmartlockIds = /* @__PURE__ */ new Map();
   authorizationNames = /* @__PURE__ */ new Map();
@@ -182,7 +183,7 @@ class NukiLocal extends utils.Adapter {
         return;
       }
       const value = packet.payload.toString();
-      this.log.info(`Nuki MQTT: ${packet.topic} = ${value}`);
+      this.log.debug(`Nuki MQTT: ${packet.topic} = ${value}`);
       void this.handleNukiMessage(packet.topic, value);
     });
     this.mqttServer = (0, import_node_net.createServer)(this.mqttBroker.handle);
@@ -594,11 +595,26 @@ class NukiLocal extends utils.Adapter {
    * STATUS / EVENTS
    * ============================================================
    */
+  async logStatusChange(deviceId, property, value, labels) {
+    const key = `${deviceId}.${property}`;
+    const previous = this.lastLoggedStates.get(key);
+    if (previous === value) {
+      return;
+    }
+    this.lastLoggedStates.set(key, value);
+    if (previous === void 0) {
+      return;
+    }
+    const nameState = await this.getStateAsync(`${deviceId}.device.name`);
+    const name = typeof (nameState == null ? void 0 : nameState.val) === "string" && nameState.val.trim() ? nameState.val.trim() : deviceId;
+    this.log.info(`${name}: ${this.getMappedText(labels, value)}`);
+  }
   async handleLockState(deviceId, payload) {
     const state = Number(payload);
     if (!Number.isFinite(state)) {
       return;
     }
+    await this.logStatusChange(deviceId, "lockState", state, LOCK_STATES);
     await this.setMappedNumberState(`${deviceId}.status.lockState`, "Lock state", payload, LOCK_STATES);
     await this.setStringState(
       `${deviceId}.status.lockStateText`,
@@ -613,6 +629,7 @@ class NukiLocal extends utils.Adapter {
     if (!Number.isFinite(state)) {
       return;
     }
+    await this.logStatusChange(deviceId, "doorState", state, DOOR_STATES);
     await this.setMappedNumberState(`${deviceId}.status.doorState`, "Door state", payload, DOOR_STATES);
     await this.setStringState(
       `${deviceId}.status.doorStateText`,
@@ -670,10 +687,12 @@ class NukiLocal extends utils.Adapter {
       await this.setStringState(`${deviceId}.keypad.lastType`, "Last access type", type);
       await this.setStringState(`${deviceId}.keypad.lastUser`, "Last user", displayUser);
       await this.setStringState(`${deviceId}.keypad.lastTimestamp`, "Last access timestamp", now, "date");
-      if (source === 2) {
-        this.log.info(`Fingerprint detected: authId=${authId}, codeId=${codeId}, user=${displayUser}`);
-      } else if (source === 1) {
-        this.log.info(`Keypad code detected: authId=${authId}, codeId=${codeId}, user=${displayUser}`);
+      if (source === 2 || source === 1) {
+        const nameState = await this.getStateAsync(`${deviceId}.device.name`);
+        const name = typeof (nameState == null ? void 0 : nameState.val) === "string" && nameState.val.trim() ? nameState.val.trim() : deviceId;
+        const accessType = source === 2 ? "Fingerprint" : "Keypad";
+        const actionText = this.getMappedText(LOCK_ACTIONS, action);
+        this.log.info(`${name}: ${accessType} access by ${displayUser} (${actionText})`);
       }
     }
     this.log.debug(
