@@ -89,6 +89,8 @@ class NukiLocal extends utils.Adapter {
   webApiTimer = null;
   webApiStopping = false;
   initializedDevices = /* @__PURE__ */ new Set();
+  deviceTasks = /* @__PURE__ */ new Map();
+  removedDevices = /* @__PURE__ */ new Set();
   lastLoggedStates = /* @__PURE__ */ new Map();
   initializingDevices = /* @__PURE__ */ new Map();
   webSmartlockIds = /* @__PURE__ */ new Map();
@@ -206,6 +208,87 @@ class NukiLocal extends utils.Adapter {
     });
     this.log.info(`Integrated MQTT broker listening on port ${port}`);
   }
+  async removeDevice(deviceId) {
+    if (!deviceId || this.sanitizeId(deviceId) !== deviceId) {
+      throw new Error("Invalid device ID");
+    }
+    await this.runDeviceTask(deviceId, async () => {
+      const object = await this.getObjectAsync(deviceId);
+      if (!object || object.type !== "device") {
+        throw new Error("Device object not found");
+      }
+      const normalized = deviceId.toUpperCase();
+      const pending = this.initializingDevices.get(normalized);
+      if (pending) {
+        await pending;
+      }
+      this.removedDevices.add(normalized);
+      try {
+        const count = await this.clearRetainedDeviceData(deviceId);
+        await this.delObjectAsync(deviceId, { recursive: true });
+        this.initializedDevices.delete(normalized);
+        const webKey = this.normalizeDeviceId(deviceId);
+        const smartlockId = this.webSmartlockIds.get(webKey);
+        this.webSmartlockIds.delete(webKey);
+        if (smartlockId !== void 0) {
+          this.authorizationNames.delete(smartlockId);
+        }
+        for (const key of this.lastLoggedStates.keys()) {
+          if (key.toUpperCase().startsWith(`${normalized}.`)) {
+            this.lastLoggedStates.delete(key);
+          }
+        }
+        this.log.info(`Removed device ${deviceId} and ${count} retained MQTT topic(s)`);
+      } catch (error) {
+        this.removedDevices.delete(normalized);
+        throw error;
+      }
+    });
+  }
+  async clearRetainedDeviceData(deviceId) {
+    var _a;
+    const persistence = this.mqttPersistence;
+    const broker = this.mqttBroker;
+    if (!persistence || !broker) {
+      throw new Error("MQTT broker or persistence is not available");
+    }
+    if (!deviceId || this.sanitizeId(deviceId) !== deviceId) {
+      throw new Error("Invalid device ID");
+    }
+    const topics = /* @__PURE__ */ new Set();
+    const stream = persistence.createRetainedStreamCombi(["nuki/#"]);
+    for await (const packet of stream) {
+      if (!packet || typeof packet.topic !== "string") {
+        continue;
+      }
+      const parts = packet.topic.split("/");
+      if (parts[0] === "nuki" && ((_a = parts[1]) == null ? void 0 : _a.toUpperCase()) === deviceId.toUpperCase()) {
+        topics.add(packet.topic);
+      }
+    }
+    for (const topic of topics) {
+      await new Promise((resolve, reject) => {
+        broker.publish(
+          {
+            cmd: "publish",
+            topic,
+            payload: Buffer.alloc(0),
+            qos: 1,
+            dup: false,
+            retain: true
+          },
+          (error) => {
+            if (error) {
+              reject(error);
+              return;
+            }
+            resolve();
+          }
+        );
+      });
+    }
+    return topics.size;
+  }
   async restoreRetainedNukiStates() {
     var _a;
     if (!this.mqttPersistence) {
@@ -227,7 +310,36 @@ class NukiLocal extends utils.Adapter {
     }
     this.log.info(`Restored ${restored} retained Nuki MQTT state(s)`);
   }
+  async runDeviceTask(deviceId, task) {
+    var _a;
+    const key = deviceId.toUpperCase();
+    const previous = (_a = this.deviceTasks.get(key)) != null ? _a : Promise.resolve();
+    const result = previous.then(task);
+    const settled = result.then(
+      () => void 0,
+      () => void 0
+    );
+    this.deviceTasks.set(key, settled);
+    try {
+      return await result;
+    } finally {
+      if (this.deviceTasks.get(key) === settled) {
+        this.deviceTasks.delete(key);
+      }
+    }
+  }
   async handleNukiMessage(topic, payload) {
+    const deviceId = topic.split("/")[1];
+    if (!deviceId || this.sanitizeId(deviceId) !== deviceId) {
+      return;
+    }
+    await this.runDeviceTask(deviceId, () => this.processNukiMessage(topic, payload));
+  }
+  async processNukiMessage(topic, payload) {
+    var _a;
+    if (this.removedDevices.has(((_a = topic.split("/")[1]) != null ? _a : "").toUpperCase())) {
+      return;
+    }
     try {
       const parts = topic.split("/");
       if (parts.length !== 3 || parts[0] !== "nuki") {
@@ -435,6 +547,12 @@ class NukiLocal extends utils.Adapter {
     await this.createCommandState(`${deviceId}.commands.lockNgo`, "Lock'n'Go");
     await this.createCommandState(`${deviceId}.commands.lockNgoUnlatch`, "Lock'n'Go with unlatch");
     await this.createCommandState(`${deviceId}.commands.fullLock`, "Full lock");
+    await this.createCommandState(`${deviceId}.commands.removeDevice`, "Delete device and retained MQTT data");
+    await this.extendObjectAsync(`${deviceId}.commands.removeDevice`, {
+      common: {
+        desc: "Permanently deletes this device's objects and retained MQTT data. Disconnect the old lock and remove it from Nuki Web first."
+      }
+    });
     await this.ensureStateObject(`${deviceId}.commands.lastResult`, "Last command result", "number", "value");
     await this.ensureStateObject(
       `${deviceId}.commands.lastResultText`,
@@ -754,6 +872,21 @@ class NukiLocal extends utils.Adapter {
     }
     const deviceId = parts[0];
     const command = parts[2];
+    if (command === "removeDevice") {
+      try {
+        await this.removeDevice(deviceId);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        this.log.error(`Could not remove device ${deviceId}: ${message}`);
+        if (await this.getObjectAsync(relativeId)) {
+          await this.setStateAsync(relativeId, false, true);
+        }
+      }
+      return;
+    }
+    if (this.removedDevices.has(deviceId.toUpperCase())) {
+      return;
+    }
     try {
       switch (command) {
         case "unlock":
@@ -883,23 +1016,35 @@ class NukiLocal extends utils.Adapter {
       }
       const conversion = this.getMqttDeviceIdFromWebDevice(device);
       const deviceId = conversion.deviceId;
-      if (conversion.originalHex !== conversion.deviceId) {
-        await this.cleanupOldWebDeviceId(conversion.originalHex, conversion.deviceId);
+      if (this.removedDevices.has(deviceId.toUpperCase())) {
+        continue;
       }
-      this.webSmartlockIds.set(this.normalizeDeviceId(deviceId), smartlockId);
-      await this.ensureDevice(deviceId);
-      await this.storeWebDeviceData(deviceId, device);
-      const deviceAuths = authorizations.filter((auth) => Number(auth.smartlockId) === smartlockId);
-      await this.storeWebAuthorizations(deviceId, smartlockId, deviceAuths);
+      let activityLogs;
       try {
         const logs = await this.nukiWebRequest(`/smartlock/${smartlockId}/log?limit=20`);
         if (Array.isArray(logs)) {
-          await this.storeWebLogs(deviceId, logs);
+          activityLogs = logs;
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         this.log.warn(`Could not load activity logs for ${deviceId}: ${message}`);
       }
+      await this.runDeviceTask(deviceId, async () => {
+        if (this.removedDevices.has(deviceId.toUpperCase())) {
+          return;
+        }
+        if (conversion.originalHex !== conversion.deviceId) {
+          await this.cleanupOldWebDeviceId(conversion.originalHex, conversion.deviceId);
+        }
+        this.webSmartlockIds.set(this.normalizeDeviceId(deviceId), smartlockId);
+        await this.ensureDevice(deviceId);
+        await this.storeWebDeviceData(deviceId, device);
+        const deviceAuths = authorizations.filter((auth) => Number(auth.smartlockId) === smartlockId);
+        await this.storeWebAuthorizations(deviceId, smartlockId, deviceAuths);
+        if (activityLogs) {
+          await this.storeWebLogs(deviceId, activityLogs);
+        }
+      });
     }
   }
   async nukiWebRequest(path) {
