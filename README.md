@@ -413,7 +413,7 @@ iobroker restart nuki-local.0
 
 ## Changelog
 
-### **WORK IN PROGRESS**
+### 0.1.5 (2026-10-28)
 
 - (helfi9999) Added a device removal command that deletes the selected device's objects and retained MQTT data.
 - (helfi9999) Serialized MQTT and Web API object updates per device to coordinate device removal.
