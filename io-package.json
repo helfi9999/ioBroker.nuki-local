@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "nuki-local",
-    "version": "0.1.4",
+    "version": "0.1.5",
     "news": {
+      "0.1.5": {
+        "en": "Added a command to remove an old device and its retained MQTT data. Coordinated device updates during removal and added a persistent storage test.",
+        "de": "Befehl zum Entfernen eines alten Geräts einschließlich seiner gespeicherten MQTT-Retain-Daten ergänzt. Geräteaktualisierungen beim Löschen koordiniert und einen Test mit persistentem Speicher hinzugefügt.",
+        "ru": "Добавлена команда удаления старого устройства и его сохранённых MQTT-сообщений. Согласованы обновления устройства при удалении и добавлен тест с постоянным хранилищем.",
+        "pt": "Adicionado um comando para remover um dispositivo antigo e suas mensagens MQTT retidas. Coordenadas as atualizações durante a remoção e adicionado um teste com armazenamento persistente.",
+        "nl": "Opdracht toegevoegd om een oud apparaat en de bijbehorende bewaarde MQTT-berichten te verwijderen. Apparaatupdates tijdens het verwijderen gecoördineerd en een test met permanente opslag toegevoegd.",
+        "fr": "Ajout d’une commande pour supprimer un ancien appareil et ses messages MQTT conservés. Coordination des mises à jour pendant la suppression et ajout d’un test avec stockage persistant.",
+        "it": "Aggiunto un comando per rimuovere un vecchio dispositivo e i relativi messaggi MQTT conservati. Coordinati gli aggiornamenti durante la rimozione e aggiunto un test con memoria persistente.",
+        "es": "Añadido un comando para eliminar un dispositivo antiguo y sus mensajes MQTT retenidos. Coordinadas las actualizaciones durante la eliminación y añadida una prueba con almacenamiento persistente.",
+        "pl": "Dodano polecenie usuwania starego urządzenia i jego zachowanych wiadomości MQTT. Skoordynowano aktualizacje podczas usuwania i dodano test z trwałym magazynem danych.",
+        "uk": "Додано команду видалення старого пристрою та його збережених MQTT-повідомлень. Узгоджено оновлення під час видалення й додано тест із постійним сховищем.",
+        "zh-cn": "新增删除旧设备及其 MQTT 保留消息的命令。协调删除期间的设备更新，并添加持久化存储测试。"
+      },
       "0.1.4": {
         "en": "Improved lock, door, fingerprint and keypad logs with device and user names. Raw MQTT messages now use debug logging; duplicate and initial state messages are suppressed.",
         "de": "Lesbarere Schloss-, Tür-, Fingerprint- und Keypad-Meldungen mit Geräte- und Benutzernamen. MQTT-Rohmeldungen erscheinen jetzt im Debug-Log; doppelte und initiale Statusmeldungen werden unterdrückt.",
