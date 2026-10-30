@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "nuki-local",
-    "version": "0.1.5",
+    "version": "0.1.6",
     "news": {
+      "0.1.6": {
+        "en": "Moved device deletion to maintenance and required a one-time confirmation valid for 30 seconds. Removed the old deletion button and disabled its command path. Extended deletion protection tests.",
+        "de": "Gerätelöschung nach maintenance verschoben und durch eine einmalige, 30 Sekunden gültige Freigabe abgesichert. Alten Löschbutton entfernt und bisherigen Befehlsweg deaktiviert. Tests für den Löschschutz erweitert.",
+        "ru": "Удаление устройства перенесено в maintenance и требует одноразового подтверждения, действующего 30 секунд. Старая кнопка удаления убрана, прежняя команда отключена. Расширены тесты защиты от случайного удаления.",
+        "pt": "Remoção de dispositivos movida para maintenance, com confirmação de uso único válida por 30 segundos. Botão antigo removido e comando anterior desativado. Testes de proteção contra remoção ampliados.",
+        "nl": "Apparaatverwijdering verplaatst naar maintenance met een eenmalige bevestiging die 30 seconden geldig is. Oude verwijderknop verwijderd en oude opdracht uitgeschakeld. Tests voor verwijderbeveiliging uitgebreid.",
+        "fr": "Suppression des appareils déplacée dans maintenance avec une confirmation à usage unique valable 30 secondes. Ancien bouton supprimé et ancienne commande désactivée. Tests de protection contre la suppression étendus.",
+        "it": "Eliminazione dei dispositivi spostata in maintenance con conferma monouso valida per 30 secondi. Rimosso il vecchio pulsante e disabilitato il comando precedente. Ampliati i test di protezione.",
+        "es": "Eliminación de dispositivos trasladada a maintenance con confirmación de un solo uso válida durante 30 segundos. Retirado el botón anterior y desactivado el comando antiguo. Ampliadas las pruebas de protección.",
+        "pl": "Usuwanie urządzeń przeniesiono do maintenance i zabezpieczono jednorazowym potwierdzeniem ważnym przez 30 sekund. Usunięto stary przycisk i wyłączono poprzednie polecenie. Rozszerzono testy zabezpieczeń.",
+        "uk": "Видалення пристроїв перенесено до maintenance з одноразовим підтвердженням, чинним 30 секунд. Стару кнопку прибрано, попередню команду вимкнено. Розширено тести захисту від випадкового видалення.",
+        "zh-cn": "将设备删除移至 maintenance，并要求在 30 秒内有效的一次性确认。移除旧删除按钮并禁用旧命令路径。扩展删除保护测试。"
+      },
       "0.1.5": {
         "en": "Added a command to remove an old device and its retained MQTT data. Coordinated device updates during removal and added a persistent storage test.",
         "de": "Befehl zum Entfernen eines alten Geräts einschließlich seiner gespeicherten MQTT-Retain-Daten ergänzt. Geräteaktualisierungen beim Löschen koordiniert und einen Test mit persistentem Speicher hinzugefügt.",

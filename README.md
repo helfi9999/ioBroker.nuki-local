@@ -422,7 +422,7 @@ iobroker restart nuki-local.0
 
 ## Changelog
 
-### **WORK IN PROGRESS**
+### 0.1.6 (2026-10-30)
 
 - (helfi9999) Moved device removal to a separate maintenance channel.
 - (helfi9999) Required a one-time confirmation valid for 30 seconds before deletion.
