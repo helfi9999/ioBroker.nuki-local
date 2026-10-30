@@ -129,6 +129,11 @@ class NukiLocal extends utils.Adapter {
 
     private readonly removedDevices = new Set<string>();
 
+    private readonly removalAuthorizations = new Map<
+        string,
+        { expiresAt: number; timer: ioBroker.Timeout | undefined }
+    >();
+
     private readonly lastLoggedStates = new Map<string, number>();
 
     private readonly initializingDevices = new Map<string, Promise<void>>();
@@ -292,6 +297,86 @@ class NukiLocal extends utils.Adapter {
         });
 
         this.log.info(`Integrated MQTT broker listening on port ${port}`);
+    }
+
+    private clearRemovalAuthorization(deviceId: string):
+        | {
+              expiresAt: number;
+              timer: ioBroker.Timeout | undefined;
+          }
+        | undefined {
+        const key = deviceId.toUpperCase();
+        const authorization = this.removalAuthorizations.get(key);
+
+        this.removalAuthorizations.delete(key);
+
+        if (authorization?.timer) {
+            this.clearTimeout(authorization.timer);
+        }
+
+        return authorization;
+    }
+
+    private async handleMaintenanceCommand(deviceId: string, command: string, value: unknown): Promise<void> {
+        const key = deviceId.toUpperCase();
+        const confirmationId = `${deviceId}.maintenance.confirmRemoval`;
+        const removalId = `${deviceId}.maintenance.removeDevice`;
+
+        if (command === "confirmRemoval" && typeof value === "boolean") {
+            this.clearRemovalAuthorization(deviceId);
+
+            if (!value) {
+                await this.setStateAsync(confirmationId, false, true);
+                return;
+            }
+
+            const authorization: { expiresAt: number; timer: ioBroker.Timeout | undefined } = {
+                expiresAt: Date.now() + 30_000,
+                timer: undefined,
+            };
+
+            this.removalAuthorizations.set(key, authorization);
+
+            authorization.timer = this.setTimeout(() => {
+                if (this.removalAuthorizations.get(key) !== authorization) {
+                    return;
+                }
+
+                this.removalAuthorizations.delete(key);
+
+                void this.setStateAsync(confirmationId, false, true).catch(error => {
+                    this.log.warn(`Could not reset device removal confirmation: ${String(error)}`);
+                });
+            }, 30_000);
+
+            await this.setStateAsync(confirmationId, true, true);
+            return;
+        }
+
+        if (command !== "removeDevice" || value !== true) {
+            return;
+        }
+
+        const authorization = this.clearRemovalAuthorization(deviceId);
+        const allowed = authorization !== undefined && Date.now() < authorization.expiresAt;
+
+        await this.setStateAsync(confirmationId, false, true);
+
+        if (!allowed) {
+            this.log.warn(`Device removal rejected for ${deviceId}: enable maintenance.confirmRemoval first`);
+            await this.setStateAsync(removalId, false, true);
+            return;
+        }
+
+        try {
+            await this.removeDevice(deviceId);
+        } catch (error) {
+            if (await this.getObjectAsync(removalId)) {
+                await this.setStateAsync(removalId, false, true);
+            }
+
+            throw error;
+        }
     }
 
     private async removeDevice(deviceId: string): Promise<void> {
@@ -632,6 +717,7 @@ class NukiLocal extends utils.Adapter {
             ["activity", "Activity"],
             ["device", "Device"],
             ["commands", "Commands"],
+            ["maintenance", "Maintenance"],
             ["advanced", "Advanced"],
             ["raw", "Raw MQTT"],
         ] as const;
@@ -751,13 +837,36 @@ class NukiLocal extends utils.Adapter {
 
         await this.createCommandState(`${deviceId}.commands.fullLock`, "Full lock");
 
-        await this.createCommandState(`${deviceId}.commands.removeDevice`, "Delete device and retained MQTT data");
+        await this.ensureStateObject(
+            `${deviceId}.maintenance.confirmRemoval`,
+            "Allow device deletion for 30 seconds",
+            "boolean",
+            "switch",
+            true,
+        );
 
-        await this.extendObjectAsync(`${deviceId}.commands.removeDevice`, {
+        await this.extendObjectAsync(`${deviceId}.maintenance.confirmRemoval`, {
             common: {
-                desc: "Permanently deletes this device's objects and retained MQTT data. Disconnect the old lock and remove it from Nuki Web first.",
+                def: false,
+                desc: "Enable to allow one device deletion within 30 seconds. Automatically resets after use, expiry or adapter restart.",
             },
         });
+
+        await this.setStateAsync(`${deviceId}.maintenance.confirmRemoval`, false, true);
+
+        await this.createCommandState(`${deviceId}.maintenance.removeDevice`, "Delete device and retained MQTT data");
+
+        await this.extendObjectAsync(`${deviceId}.maintenance.removeDevice`, {
+            common: {
+                desc: "Requires confirmRemoval first. Permanently deletes this device's objects and retained MQTT data. Disconnect the old lock and remove it from Nuki Web first.",
+            },
+        });
+
+        const legacyRemovalId = `${deviceId}.commands.removeDevice`;
+
+        if (await this.getObjectAsync(legacyRemovalId)) {
+            await this.delObjectAsync(legacyRemovalId);
+        }
 
         await this.ensureStateObject(`${deviceId}.commands.lastResult`, "Last command result", "number", "value");
 
@@ -1196,7 +1305,7 @@ class NukiLocal extends utils.Adapter {
     }
 
     private async onStateChange(id: string, state: ioBroker.State | null | undefined): Promise<void> {
-        if (!state || state.ack || state.val !== true) {
+        if (!state || state.ack) {
             return;
         }
 
@@ -1210,7 +1319,7 @@ class NukiLocal extends utils.Adapter {
 
         const parts = relativeId.split(".");
 
-        if (parts.length !== 3 || parts[1] !== "commands") {
+        if (parts.length !== 3 || (parts[1] !== "commands" && parts[1] !== "maintenance")) {
             return;
         }
 
@@ -1218,19 +1327,32 @@ class NukiLocal extends utils.Adapter {
 
         const command = parts[2];
 
-        if (command === "removeDevice") {
+        if (!deviceId || this.sanitizeId(deviceId) !== deviceId) {
+            return;
+        }
+
+        if (parts[1] === "maintenance") {
+            if (this.removedDevices.has(deviceId.toUpperCase())) {
+                return;
+            }
+
             try {
-                await this.removeDevice(deviceId);
+                await this.handleMaintenanceCommand(deviceId, command, state.val);
             } catch (error) {
                 const message = error instanceof Error ? error.message : String(error);
 
-                this.log.error(`Could not remove device ${deviceId}: ${message}`);
-
-                if (await this.getObjectAsync(relativeId)) {
-                    await this.setStateAsync(relativeId, false, true);
-                }
+                this.log.error(`Maintenance command failed for ${deviceId}: ${message}`);
             }
 
+            return;
+        }
+
+        if (state.val !== true) {
+            return;
+        }
+
+        if (command === "removeDevice") {
+            this.log.warn("The old commands.removeDevice command is disabled. Use maintenance with confirmation.");
             return;
         }
 
