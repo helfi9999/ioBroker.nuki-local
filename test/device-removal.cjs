@@ -88,7 +88,22 @@ module.exports = NukiLocal;
             ["OLDLOCK2", { type: "device" }],
         ]);
         const adapter = Object.create(AdapterClass.prototype);
+        const states = new Map();
+        const timers = new Map();
+        let nextTimer = 0;
         const properties = {
+            namespace: "nuki-local.0",
+            removalAuthorizations: new Map(),
+            setStateAsync: async (id, value, ack) => {
+                assert.equal(ack, true);
+                states.set(id, value);
+            },
+            setTimeout: callback => {
+                const timer = ++nextTimer;
+                timers.set(timer, callback);
+                return timer;
+            },
+            clearTimeout: timer => timers.delete(timer),
             mqttBroker: broker,
             mqttPersistence: persistence,
             deviceTasks: new Map(),
@@ -113,8 +128,64 @@ module.exports = NukiLocal;
             Object.defineProperty(adapter, key, { value, writable: true, configurable: true });
         }
 
-        assert.equal((await retainedTopics()).length, 3);
-        await adapter.removeDevice("OLDLOCK");
+        async function write(deviceId, channel, command, value, ack = false) {
+            await adapter.onStateChange(`nuki-local.0.${deviceId}.${channel}.${command}`, { val: value, ack });
+        }
+
+        async function assertUnchanged() {
+            assert.equal(objects.has("OLDLOCK"), true);
+            assert.equal(objects.has("OLDLOCK2"), true);
+            assert.equal((await retainedTopics()).length, 3);
+        }
+
+        await assertUnchanged();
+
+        // No confirmation: deletion must be rejected.
+        await write("OLDLOCK", "maintenance", "removeDevice", true);
+        await assertUnchanged();
+
+        // Acknowledged state changes cannot authorize deletion.
+        await write("OLDLOCK", "maintenance", "confirmRemoval", true, true);
+        assert.equal(adapter.removalAuthorizations.size, 0);
+
+        // The legacy command must remain disabled even while authorized.
+        await write("OLDLOCK", "maintenance", "confirmRemoval", true);
+        await write("OLDLOCK", "commands", "removeDevice", true);
+        await assertUnchanged();
+
+        // Explicitly withdrawing confirmation prevents deletion.
+        await write("OLDLOCK", "maintenance", "confirmRemoval", false);
+        await write("OLDLOCK", "maintenance", "removeDevice", true);
+        await assertUnchanged();
+        assert.equal(timers.size, 0);
+
+        // Expired authorization must fail even before its timer callback runs.
+        await write("OLDLOCK", "maintenance", "confirmRemoval", true);
+        adapter.removalAuthorizations.get("OLDLOCK").expiresAt = Date.now() - 1;
+        await write("OLDLOCK", "maintenance", "removeDevice", true);
+        await assertUnchanged();
+
+        // Timer expiry resets both the authorization and its visible state.
+        await write("OLDLOCK", "maintenance", "confirmRemoval", true);
+        const authorization = adapter.removalAuthorizations.get("OLDLOCK");
+        const callback = timers.get(authorization.timer);
+        timers.delete(authorization.timer);
+        callback();
+        assert.equal(adapter.removalAuthorizations.size, 0);
+        assert.equal(states.get("OLDLOCK.maintenance.confirmRemoval"), false);
+        await write("OLDLOCK", "maintenance", "removeDevice", true);
+        await assertUnchanged();
+
+        // Authorization applies only to the selected device.
+        await write("OLDLOCK", "maintenance", "confirmRemoval", true);
+        await write("OLDLOCK2", "maintenance", "removeDevice", true);
+        await assertUnchanged();
+
+        // Valid confirmation permits deletion once and is consumed.
+        await write("OLDLOCK", "maintenance", "removeDevice", true);
+        assert.equal(adapter.removalAuthorizations.size, 0);
+        assert.equal(timers.size, 0);
+        assert.equal(states.get("OLDLOCK.maintenance.confirmRemoval"), false);
 
         assert.equal(objects.has("OLDLOCK"), false);
         assert.equal(objects.has("OLDLOCK2"), true);
