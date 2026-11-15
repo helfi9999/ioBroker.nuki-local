@@ -422,6 +422,13 @@ iobroker restart nuki-local.0
 
 ## Changelog
 
+### 0.1.7 (2026-11-15)
+
+- (helfi9999) Updated aedes-persistence-level to 9.2.0 and @iobroker/testing to 6.3.2.
+- (helfi9999) Updated locked follow-redirects and node-forge dependencies to address reported vulnerabilities.
+- (helfi9999) Switched Dependabot auto-merge to pull_request and removed the obsolete workflow backup.
+
+
 ### 0.1.6 (2026-10-30)
 
 - (helfi9999) Moved device removal to a separate maintenance channel.
