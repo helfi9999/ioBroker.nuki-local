@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "nuki-local",
-    "version": "0.1.6",
+    "version": "0.1.7",
     "news": {
+      "0.1.7": {
+        "en": "Updated MQTT persistence and testing dependencies. Updated follow-redirects and node-forge in the lockfile to address reported vulnerabilities. Adjusted the Dependabot auto-merge workflow.",
+        "de": "Abhängigkeiten für MQTT-Persistenz und Tests aktualisiert. follow-redirects und node-forge im Lockfile zur Behebung gemeldeter Sicherheitslücken aktualisiert. Dependabot-Auto-Merge-Workflow angepasst.",
+        "ru": "Обновлены зависимости хранения MQTT и тестирования. В lockfile обновлены follow-redirects и node-forge для устранения известных уязвимостей. Изменён процесс автоматического слияния Dependabot.",
+        "pt": "Atualizadas as dependências de persistência MQTT e testes. follow-redirects e node-forge atualizados no lockfile para corrigir vulnerabilidades relatadas. Ajustado o fluxo de integração automática do Dependabot.",
+        "nl": "Afhankelijkheden voor MQTT-opslag en tests bijgewerkt. follow-redirects en node-forge in het lockfile bijgewerkt om gemelde kwetsbaarheden te verhelpen. Dependabot-workflow voor automatisch samenvoegen aangepast.",
+        "fr": "Dépendances de persistance MQTT et de tests mises à jour. follow-redirects et node-forge mis à jour dans le lockfile pour corriger les vulnérabilités signalées. Workflow de fusion automatique Dependabot adapté.",
+        "it": "Aggiornate le dipendenze di persistenza MQTT e test. Aggiornati follow-redirects e node-forge nel lockfile per correggere le vulnerabilità segnalate. Adeguato il workflow di unione automatica Dependabot.",
+        "es": "Actualizadas las dependencias de persistencia MQTT y pruebas. Actualizados follow-redirects y node-forge en el lockfile para corregir vulnerabilidades notificadas. Ajustado el flujo de fusión automática de Dependabot.",
+        "pl": "Zaktualizowano zależności trwałego magazynu MQTT i testów. Zaktualizowano follow-redirects i node-forge w lockfile w celu usunięcia zgłoszonych podatności. Dostosowano automatyczne scalanie Dependabot.",
+        "uk": "Оновлено залежності зберігання MQTT і тестування. У lockfile оновлено follow-redirects і node-forge для усунення відомих вразливостей. Змінено процес автоматичного злиття Dependabot.",
+        "zh-cn": "更新 MQTT 持久化和测试依赖。在 lockfile 中更新 follow-redirects 和 node-forge，以修复已报告的漏洞。调整 Dependabot 自动合并工作流。"
+      },
       "0.1.6": {
         "en": "Moved device deletion to maintenance and required a one-time confirmation valid for 30 seconds. Removed the old deletion button and disabled its command path. Extended deletion protection tests.",
         "de": "Gerätelöschung nach maintenance verschoben und durch eine einmalige, 30 Sekunden gültige Freigabe abgesichert. Alten Löschbutton entfernt und bisherigen Befehlsweg deaktiviert. Tests für den Löschschutz erweitert.",
