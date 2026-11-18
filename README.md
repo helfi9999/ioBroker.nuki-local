@@ -422,6 +422,12 @@ iobroker restart nuki-local.0
 
 ## Changelog
 
+### 0.1.8 (2026-11-18)
+
+- (helfi9999) Fixed the connection indicator so it turns green only when a Nuki connects via MQTT and resets when the last lock disconnects.
+- (helfi9999) Added tests for rejected MQTT credentials and connections with multiple locks.
+
+
 ### 0.1.7 (2026-11-15)
 
 - (helfi9999) Updated aedes-persistence-level to 9.2.0 and @iobroker/testing to 6.3.2.
