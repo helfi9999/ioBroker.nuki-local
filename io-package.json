@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "nuki-local",
-    "version": "0.1.7",
+    "version": "0.1.8",
     "news": {
+      "0.1.8": {
+        "en": "The adapter shows a connection only while at least one Nuki lock is connected via MQTT.",
+        "de": "Der Adapter zeigt nur dann eine Verbindung an, wenn mindestens ein Nuki-Schloss per MQTT verbunden ist.",
+        "ru": "Адаптер показывает подключение, только если хотя бы один замок Nuki подключён по MQTT.",
+        "pt": "O adaptador indica uma ligação apenas quando pelo menos uma fechadura Nuki está ligada via MQTT.",
+        "nl": "De adapter toont alleen een verbinding als minstens één Nuki-slot via MQTT verbonden is.",
+        "fr": "L’adaptateur indique une connexion uniquement si au moins une serrure Nuki est connectée via MQTT.",
+        "it": "L’adattatore indica una connessione solo se almeno una serratura Nuki è connessa tramite MQTT.",
+        "es": "El adaptador solo indica conexión cuando al menos una cerradura Nuki está conectada mediante MQTT.",
+        "pl": "Adapter wskazuje połączenie tylko wtedy, gdy co najmniej jeden zamek Nuki jest połączony przez MQTT.",
+        "uk": "Адаптер показує підключення лише тоді, коли принаймні один замок Nuki підключений через MQTT.",
+        "zh-cn": "只有至少一把 Nuki 智能锁通过 MQTT 连接时，适配器才会显示已连接。"
+      },
       "0.1.7": {
         "en": "Updated MQTT persistence and testing dependencies. Updated follow-redirects and node-forge in the lockfile to address reported vulnerabilities. Adjusted the Dependabot auto-merge workflow.",
         "de": "Abhängigkeiten für MQTT-Persistenz und Tests aktualisiert. follow-redirects und node-forge im Lockfile zur Behebung gemeldeter Sicherheitslücken aktualisiert. Dependabot-Auto-Merge-Workflow angepasst.",
