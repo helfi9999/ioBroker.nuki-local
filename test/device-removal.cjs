@@ -1,6 +1,8 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
+const net = require("node:net");
+const { setTimeout: delay } = require("node:timers/promises");
 const path = require("node:path");
 const vm = require("node:vm");
 const { createRequire } = require("node:module");
@@ -8,6 +10,97 @@ const ts = require("typescript");
 const { Level } = require("level");
 const { Aedes } = require("aedes");
 const createPersistence = require("aedes-persistence-level");
+
+async function testMqttConnection(AdapterClass, directory) {
+    const adapter = Object.create(AdapterClass.prototype);
+    let connected = false;
+    const writes = [];
+    const sockets = [];
+    Object.assign(adapter, {
+        config: { mqttUsername: "test-user", mqttPassword: "test-password" },
+        connectedNukiClients: new Set(),
+        deviceTasks: new Map(),
+        log: { info() {}, warn() {}, error() {}, debug() {} },
+        setStateAsync: async (id, value, ack) => {
+            assert.equal(id, "info.connection");
+            assert.equal(ack, true);
+            connected = value;
+            writes.push(value);
+        },
+    });
+
+    async function waitForWrites(count) {
+        for (let i = 0; i < 100 && writes.length < count; i++) {
+            await delay(20);
+        }
+        assert.equal(writes.length, count, "Expected connection state update");
+    }
+
+    async function connect(clientId, password, expectedCode) {
+        const field = value => {
+            const data = Buffer.from(value);
+            return Buffer.concat([Buffer.from([0, data.length]), data]);
+        };
+        // MQTT 3.1.1 CONNECT: username, password and clean session.
+        const body = Buffer.concat([
+            Buffer.from([0, 4, 77, 81, 84, 84, 4, 194, 0, 10]),
+            field(clientId),
+            field("test-user"),
+            field(password),
+        ]);
+        const socket = net.createConnection(adapter.mqttServer.address().port, "127.0.0.1");
+        sockets.push(socket);
+        await new Promise((resolve, reject) => {
+            let response = Buffer.alloc(0);
+            socket.on("error", reject);
+            socket.once("close", () => reject(new Error("Connection closed before CONNACK")));
+            socket.setTimeout(3000, () => reject(new Error("No MQTT CONNACK received")));
+            socket.on("data", data => {
+                response = Buffer.concat([response, data]);
+                if (response.length >= 4) {
+                    socket.setTimeout(0);
+                    resolve(response.subarray(0, 4));
+                }
+            });
+            socket.write(Buffer.concat([Buffer.from([16, body.length]), body]));
+        }).then(response => assert.deepEqual([...response], [32, 2, 0, expectedCode]));
+        return socket;
+    }
+
+    try {
+        await adapter.startMqttBroker();
+        assert.equal(connected, false);
+        await connect("Nuki_00000001", "wrong-password", 5);
+        assert.deepEqual(writes, []);
+
+        const first = await connect("Nuki_00000001", "test-password", 0);
+        await waitForWrites(1);
+        assert.equal(connected, true);
+
+        const second = await connect("SL3P_00000002", "test-password", 0);
+        await waitForWrites(2);
+        first.destroy();
+        await waitForWrites(3);
+        assert.equal(connected, true);
+
+        second.destroy();
+        await waitForWrites(4);
+        assert.equal(connected, false);
+        console.log("OK: MQTT rejected login, connection and multi-device disconnect verified.");
+    } finally {
+        for (const socket of sockets) {
+            socket.destroy();
+        }
+        if (adapter.mqttBroker) {
+            await new Promise(resolve => adapter.mqttBroker.close(resolve));
+        }
+        if (adapter.mqttServer?.listening) {
+            await new Promise(resolve => adapter.mqttServer.close(resolve));
+        }
+        await adapter.mqttDatabase?.close();
+        fs.rmSync(directory, { recursive: true, force: true });
+    }
+}
 
 async function main() {
     const filename = path.resolve("src/main.ts");
@@ -29,10 +122,28 @@ module.exports = NukiLocal;
         { filename },
     );
     const sourceRequire = createRequire(filename);
-    const testRequire = id => (id === "@iobroker/adapter-core" ? { Adapter: class {} } : sourceRequire(id));
+    let brokerTestDirectory;
+    const testRequire = id => {
+        if (id === "@iobroker/adapter-core") {
+            return { Adapter: class {}, getAbsoluteInstanceDataDir: () => brokerTestDirectory };
+        }
+        if (id === "node:net") {
+            return {
+                ...net,
+                createServer: handler => {
+                    const server = net.createServer(handler);
+                    server.listen = () => net.Server.prototype.listen.call(server, 0, "127.0.0.1");
+                    return server;
+                },
+            };
+        }
+        return sourceRequire(id);
+    };
 
     wrapper(testRequire, loaded, loaded.exports, filename, path.dirname(filename));
     const AdapterClass = loaded.exports;
+    brokerTestDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "nuki-connection-test-"));
+    await testMqttConnection(AdapterClass, brokerTestDirectory);
 
     const directory = fs.mkdtempSync(path.join(os.tmpdir(), "nuki-removal-test-"));
     let database;
