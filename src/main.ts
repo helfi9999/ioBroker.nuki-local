@@ -123,6 +123,8 @@ class NukiLocal extends utils.Adapter {
 
     private webApiStopping = false;
 
+    private readonly connectedNukiClients = new Set<object>();
+
     private readonly initializedDevices = new Set<string>();
 
     private readonly deviceTasks = new Map<string, Promise<void>>();
@@ -173,8 +175,6 @@ class NukiLocal extends utils.Adapter {
                 await this.startWebApi();
             }
 
-            await this.setStateAsync("info.connection", true, true);
-
             this.log.info("Nuki Local adapter started");
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
@@ -205,6 +205,14 @@ class NukiLocal extends utils.Adapter {
      * MQTT
      * ============================================================
      */
+
+    private updateMqttConnectionState(): void {
+        void this.runDeviceTask("mqtt:connection", async () => {
+            await this.setStateAsync("info.connection", this.connectedNukiClients.size > 0, true);
+        }).catch(error => {
+            this.log.warn(`Could not update MQTT connection state: ${String(error)}`);
+        });
+    }
 
     private async startMqttBroker(): Promise<void> {
         const port = Number(this.config.mqttPort) || 1883;
@@ -249,10 +257,19 @@ class NukiLocal extends utils.Adapter {
 
         this.mqttBroker.on("client", client => {
             this.log.info(`MQTT client connected: ${client.id}`);
+
+            if (/^(?:Nuki|SL3P)_[0-9a-f]{8}$/i.test(client.id)) {
+                this.connectedNukiClients.add(client);
+                this.updateMqttConnectionState();
+            }
         });
 
         this.mqttBroker.on("clientDisconnect", client => {
             this.log.info(`MQTT client disconnected: ${client.id}`);
+
+            if (this.connectedNukiClients.delete(client)) {
+                this.updateMqttConnectionState();
+            }
         });
 
         this.mqttBroker.on("publish", (packet, client) => {
